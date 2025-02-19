@@ -4,9 +4,7 @@
 
 #+html: <img src="./assets/splash.svg" align="left" width="30%">
 
-[[./assets/READ_images]]
-
-#+html: <img src="./assets/README_images/wtf.jpg" align="right" width="25%">
+[[./assets/READ_images/screenshot.png]]
 
 What's this?, why does this exists?
 If you came from VsCode, Eclipse, VisualStudio or Notepad
@@ -14,6 +12,8 @@ and want to use emacs power for your daily workflow
 and don't want to spend your lifetime customizing your
 init.el all the time or want to show off, this is your
 configuration.
+
+#+html: <img src="./assets/README_images/wtf.jpg" align="right" width="25%">
 
 *Note: this configuration It's intended to copy and paste*
 *the code you like into your own setup, whether it's Doom,*
