@@ -2,7 +2,7 @@
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
-#+html: <img src="./assets/splash.svg" align="left" width="40%">
+#+html: <img src="./assets/splash.svg" align="left" width="30%">
 
 [[./assets/READ_images]]
 
