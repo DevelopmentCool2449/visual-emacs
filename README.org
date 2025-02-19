@@ -2,9 +2,9 @@
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
-[[https://raw.githubusercontent.com/DevelopmentCool2449/visual-emacs/main/assets/splash.svg]]
+[[./assets/splash.svg]]
 
-#+html: <img src="https://raw.githubusercontent.com/DevelopmentCool2449/visual-emacs/main/assets/README_images/Unsettled-Tom.jpg.svg" align="right" width="10%">
+#+html: <img src="./assets/README_images/Unsettled-Tom.jpg.svg" align="right" width="10%">
 
 What's this?, why does this exists?
 If you came from VsCode, Eclipse, VisualStudio or Notepad
