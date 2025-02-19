@@ -4,7 +4,7 @@
 
 [[./assets/splash.svg]]
 
-#+html: <img src="./assets/README_images/Unsettled-Tom.jpg.svg" align="right" width="10%">
+#+html: <img src="./assets/README_images/Unsettled-Tom.jpg" align="right" width="10%">
 
 What's this?, why does this exists?
 If you came from VsCode, Eclipse, VisualStudio or Notepad
