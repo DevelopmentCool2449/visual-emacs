@@ -1,0 +1,18 @@
+# folders
+.cache/
+.extension/
+auto-save-list/
+eln-cache/
+elpa/
+server/
+transient/
+tree-sitter/
+
+# files
+*#
+*.el~
+history
+network-security.data
+recentf
+tramp
+projects

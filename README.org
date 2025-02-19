@@ -1,0 +1,2910 @@
+#+TITLE: Visual Emacs - the sinners editor 😈
+#+AUTHOR: Elijah Gabe P.
+#+OPTIONS: num:nil
+
+[[https://raw.githubusercontent.com/DevelopmentCool2449/visual-emacs/main/assets/splash.svg]]
+
+#+html: <img src="https://raw.githubusercontent.com/DevelopmentCool2449/visual-emacs/main/assets/README_images/Unsettled-Tom.jpg.svg" align="right" width="10%">
+
+What's this?, why does this exists?
+If you came from VsCode, Eclipse, VisualStudio or Notepad
+and want to use emacs power for your daily workflow
+and don't want to spend your lifetime customizing your
+init.el all the time or want to show off, this is your
+configuration.
+
+*Note: this configuration It's intended to copy and paste*
+*the code you like into your own setup, whether it's Doom,*
+*Spacemacs, or your own (Vanilla). This setting is not*
+*guaranteed to work 100%*
+
+*Feel free to copy whatever you want!*
+
+** Requirements
+- an folder named "assets" in your
+  `user-emacs-directory' path where your
+  images, icons must live.
+
+- an folder named "templates" in your
+  `user-emacs-directory' path
+
+- a nerd-font installed /(This configuration uses
+  Inconsolata, you can change it to the one you prefer.)/
+
+- latest emacs version (better if nighly)
+
+- a config file to where paste these snippets (optional)
+
+* Elisp code:
+Firsts lines (init.el):
+
+NOTE: This setting can fit as an org file or as multiple
+separate files (manually), either you can choose which one
+to use.
+
+In case it is for separate files you must create a
+directory called "config-lisp-files" in emacs config path.
+
+#+begin_src elisp
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (setopt gc-cons-threshold 800000
+                      gc-cons-percentage 0.1
+                      file-name-handler-alist startup/file-name-handler-alist)))
+
+  ;;; Store customization file in separate file
+  ;; (Optional)
+  ;; (setopt custom-file (concat user-emacs-directory "config-lisp-files/custom.el"))
+  ;; (load custom-file)
+
+  ;; Disable theme on Terminal and enable Mouse Support
+  (unless (display-graphic-p)
+    (xterm-mouse-mode 1)
+    (if (eq system-type 'window-nt)
+        (disable-theme (car custom-enabled-themes))))
+
+  ;; For emacs-31
+  ;;(dolist (content `("whatever/path/" ,user-emacs-directory
+  ;;                   ,(concat user-emacs-directory "config-lisp-files/")))
+  ;;  (add-to-list 'trusted-content content))
+
+
+  ;; The following code shown below is in case you prefer
+  ;; to use separate files, be careful where you copy.
+  ;; (let ((configuration-directory (concat user-emacs-directory "config-lisp-files/")))
+  ;; ;; PACKAGES
+  ;; (load (concat configuration-directory "packages"))
+
+  ;; ;; INTERNAL CONFIGURATIONS
+  ;; (load (concat configuration-directory "internal-configurations"))
+
+  ;; ;; KEY MAPPINGS
+  ;; (load (concat configuration-directory "key-mappings"))
+
+  ;; ;; SYNTAX HIGHLIGHTING
+  ;; (load (concat configuration-directory "syntax-highlighting"))
+
+  ;; ;; GUI ENHANCEMENT
+  ;; (load (concat configuration-directory "tool-bar"))
+  ;; (load (concat configuration-directory "menu-bar"))
+
+  ;; ;; MISC
+  ;; (load (concat configuration-directory "minibuffer"))
+  ;; (load (concat configuration-directory "ui-enchantment"))
+  ;; (load (concat configuration-directory "misc"))
+
+  ;; ;; SYNTAX AND SPELL CHECKING
+  ;; (load (concat configuration-directory "syntax-checking"))
+  ;; (load (concat configuration-directory "spell-checking"))
+
+  ;; ;; WINDOWS AND FRAMES
+  ;; (load (concat configuration-directory "window-management"))
+
+  ;; ;; LSP CONFIGURATION
+  ;; (load (concat configuration-directory "lsp"))
+
+  ;; ;; FiLE MANAGEMENT
+  ;; (load (concat configuration-directory "file-management"))
+
+  ;; ;; COMPLETION
+  ;; (load (concat configuration-directory "smart-completion"))
+
+  ;; ;; MODELINE
+  ;; (load (concat configuration-directory "mode-line"))
+
+  ;; ;; THEMES
+  ;; (load (concat configuration-directory "custom-themes"))
+
+  ;; ;; DASHBOARD
+  ;; (load (concat configuration-directory "dashboard"))
+
+  ;; ;; CONFIGURING ORG MODE
+  ;; (load (concat configuration-directory "org-mode"))
+
+  ;; ;; CENTAUR TABS
+  ;; (load (concat configuration-directory "window-tabs"))
+
+  ;; ;; SNIPPETS
+  ;; (load (concat configuration-directory "code-snippets"))
+
+  ;; ;; AUTO-INSERT
+  ;; (load (concat configuration-directory "auto-insert-templates"))
+
+  ;; ;; ENABLE LIGATURES
+  ;; (load (concat configuration-directory "font-ligatures"))
+
+  ;; ;; START EMACS CLIENT AT STARTING EMACS
+  ;; (require 'server)
+  ;; (unless (server-running-p) (server-start))
+
+  ;; ;; For fix a Woman Error
+  ;; (savehist-mode t))
+#+end_src
+
+* packages.el
+
+#+begin_src elisp
+  (use-package package
+    :ensure nil
+    :custom
+    (package-vc-register-as-project nil)
+    (use-package-always-ensure t) ; Auto-download package if not exists
+    ;; (use-package-hook-name-suffix "") ; Change :hook suffix
+    (use-package-enable-imenu-support t) ; Let imenu finds use-package definitions
+    :config
+    ;; Packages gpg are buggy in both systems
+    (if (or (eq system-type 'windows-nt)
+            (eq system-type 'android))
+        (setopt package-check-signature nil))
+
+    ;; Add MELPA
+    (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+    (advice-add 'package--save-selected-packages :override #'my-package--save-selected-packages)
+    (easy-menu-add-item (lookup-key package-menu-mode-map [menu-bar package])
+                        nil
+                        ["Upgrade VC Packages" package-vc-upgrade-all :help "Upgrade all VC Packages"]
+                        "Execute Marked Actions")
+    :preface
+    ;; HACK: DO NOT save package-selected-packages to `custom-file'.
+    ;; https://github.com/jwiegley/use-package/issues/383#issuecomment-247801751
+    (defun my-package--save-selected-packages (&optional value)
+      "Set `package-selected-packages' to VALUE but don't save to option `custom-file'."
+      (if value
+          (setopt package-selected-packages value))
+      (unless after-init-time
+        (add-hook 'after-init-hook #'my-package--save-selected-packages)))
+
+    ;; (Never used)
+    ;; use-package :mark-selected
+    ;; Make it possible to kinda manage `package-selected-packages' from
+    ;; use-package by adding `:mark-selected' as a keyword..
+    ;; (require 'use-package)
+    ;; (defun use-package-normalize/:mark-selected (_name keyword args)
+    ;;   (use-package-only-one (symbol-name keyword) args
+    ;;     #'(lambda (_label arg)
+    ;;         (or arg
+    ;; 	        nil))))
+
+    ;; (defun use-package-handler/:mark-selected (name _keyword arg rest state)
+    ;;   (let ((body (use-package-process-keywords name rest state)))
+    ;;     (if arg
+    ;; 	    (package--update-selected-packages `(,name) '()))
+    ;;     body))
+
+    ;; (add-to-list 'use-package-keywords :mark-selected t)
+    )
+#+end_src
+
+* internal-configurations.el
+Some Tweaks into internal options.
+
+#+begin_src elisp
+  (use-package emacs
+    :ensure nil
+    :hook
+    ((prog-mode text-mode conf-mode help-mode)
+     . visual-wrap-prefix-mode)
+    ((prog-mode text-mode conf-mode) . display-line-numbers-mode)
+    :custom
+    (context-menu-mode t)
+    ;; Exit message
+    (confirm-kill-emacs nil)
+    ;; No Undo Redos
+    (undo-no-redo t)
+
+  ;;; IMAGE
+    (image-animate-loop t)
+
+    ;; Only text-mode on new buffers
+    (initial-major-mode 'text-mode)
+
+    ;; Delete just 1 char (including tabs)
+    (backward-delete-char-untabify-method nil)
+
+    ;; Disable Welcome Screen
+    (inhibit-startup-screen t)
+
+    ;; Hide cursor in not focus windows
+    (cursor-in-non-selected-windows nil)
+
+    ;; Better Scrolling
+    (pixel-scroll-precision-mode t)
+    (pixel-scroll-precision-interpolate-page t)
+    (scroll-conservatively 101) ;; must be greater than or equal to 101
+    (scroll-step 1)
+
+    :config
+    ;; WSL2 clipboard fix
+    (if (file-executable-p "/path/to/win32yank.exe")
+        (setopt interprogram-cut-function
+                (lambda (text)
+                  (with-temp-buffer
+                    (insert text)
+                    (call-process-region (point-min) (point-max) "win32yank.exe" nil 0 nil "-i" "--crlf")))))
+
+    ;;; Faces
+    (set-face-attribute 'custom-group-tag nil :height 1.2)
+    (set-face-attribute 'region nil :extend nil)
+    (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
+
+    ;; Alias
+    (defalias 'yes-or-no-p 'y-or-n-p)
+    ;; y-or-n-p with return
+    (advice-add 'y-or-n-p :around
+                (lambda (orig-func &rest args)
+                  (let ((query-replace-map (copy-keymap query-replace-map)))
+                    (keymap-set query-replace-map "<return>" 'act)
+                    (apply orig-func args))))
+
+    ;; Configurations for Windows
+    (if (eq system-type 'windows-nt)
+        (setopt w32-get-true-file-attributes nil   ; decrease file IO workload
+                w32-use-native-image-API t         ; use native w32 API
+                w32-pipe-read-delay 0              ; faster IPC
+                w32-pipe-buffer-size (* 64 1024))) ; read more at a time (was 4K)
+
+    ;; Set Coding System
+    (if (fboundp 'set-charset-priority)
+        (set-charset-priority 'unicode))
+    (prefer-coding-system 'utf-8)
+    (setopt locale-coding-system 'utf-8)
+    (unless (eq system-type 'windows-nt)
+      (set-selection-coding-system 'utf-8))
+
+    :preface
+    ;; Enable line numbers and pairs if buffer/file is writable
+    (advice-add #'fundamental-mode :after (lambda (&rest _)
+                                            (unless buffer-read-only
+                                              (display-line-numbers-mode)
+                                              (electric-pair-mode))))
+    ;; Kill Scratch Buffer
+    (if (get-buffer "*scratch*")
+        (kill-buffer "*scratch*"))
+
+    ;; Fix Cases region commands
+    ;; Use at your own risk.
+    (put 'upcase-region     'disabled nil)
+    (put 'downcase-region   'disabled nil)
+    (put 'capitalize-region 'disabled nil)
+
+    ;; Continue Comments.
+    (advice-add 'newline-and-indent :before-until
+                (lambda (&rest _)
+                  (interactive "*")
+                  (when-let (((nth 4 (syntax-ppss (point))))
+                             ((functionp comment-line-break-function))
+                             (fill-prefix " *"))
+                    (funcall comment-line-break-function nil)
+                    t))))
+#+end_src
+
+* key-mappings.el
+
+#+begin_src elisp
+  ;; ╭─────────────────────────────────────────────────────────────────────────────────╮
+  ;; │             C    means (press and hold) the 'Control' key                       │
+  ;; │             M    means the Meta key (the 'Alt' key, on most keyboards)          │
+  ;; │             S    means the 'Shift' key (e.g. S─TAB means Shift Tab)             │
+  ;; │             DEL  means the 'Backspace' key (not the Delete key)                 │
+  ;; │             RET  means the 'Return' or 'Enter' key                              │
+  ;; │             SPC  means the 'Space' bar                                          │
+  ;; │             ESC  means the 'Escape'key                                          │
+  ;; │             TAB  means the 'Tab' key                                            │
+  ;; └─────────────────────────────────────────────────────────────────────────────────╯
+
+      ;;; WHICH KEY
+  (use-package which-key :ensure t :diminish)
+
+      ;;; WAKIB KEYS ()
+  ;;   (use-package wakib-keys :diminish
+  ;;     :config
+  ;;       (keymap-set-after (current-global-map) "<menu-bar> <options> <wakib>"
+  ;;         '(menu-item "Wakib Keys Mode" wakib-keys
+  ;;                     :help "Enable Wakib Keys (this rebind C-x/C-c to C-e/C-d)"
+  ;;                     :button (:toggle and (default-boundp 'wakib-keys)
+  ;;                                      (default-value 'wakib-keys)))
+  ;;         'cua-mode))
+
+  ;; ;;; MULTI-CURSORS
+  (use-package multiple-cursors
+    :config
+    (add-to-list 'mc/unsupported-minor-modes 'cua-mode)
+    :custom
+    (mc/always-run-for-all t))
+
+  ;; (use-package hungry-delete
+  ;;   :config
+  ;;   (global-hungry-delete-mode t))
+
+      ;;; OVERRIDE FUNCTIONS
+
+  ;; (defun my/call-interactively-inhibit-kill-ring (fun &rest args)
+  ;; (if (interactive-p)
+  ;; (let ((kill-ring '(""))
+  ;; (select-enable-clipboard nil))
+  ;; (call-interactively fun))
+  ;; (apply fun args)))
+
+  ;; (advice-add 'kill-word          :around #'my/call-interactively-inhibit-kill-ring)
+  ;; (advice-add 'kill-whole-line    :around #'my/call-interactively-inhibit-kill-ring)
+  ;; (advice-add 'backward-kill-word :around #'my/call-interactively-inhibit-kill-ring)
+
+  ;; Key movements functions
+  ;;  (defun my/backward-paragraph (&optional n)
+  ;;    (interactive "^p")
+  ;;    (let ((n (if (null n) 1 n)))
+  ;;      (re-search-backward "\\(^\\s-*$\\)\n" nil "NOERROR" n)))
+  ;;  (advice-add #'backward-paragraph :override #'my/backward-paragraph)
+
+  ;;  (defun my/forward-paragraph (&optional n)
+  ;;    (interactive "^p")
+  ;;    (let ((n (if (null n) 1 n)))
+  ;;      (re-search-forward "\n\\(^\\s-*$\\)" nil "NOERROR" n)))
+  ;;  (advice-add #'forward-paragraph :override #'my/forward-paragraph)
+
+  ;;  (defun beginning-of-line-or-indentation ()
+  ;;    (interactive "^")
+  ;;    (if (= (save-excursion (back-to-indentation) (point)) (point))
+  ;;        (beginning-of-line)
+  ;;      (back-to-indentation)))
+
+  ;; Use bind-key to set your bindings
+  ;; (bind-keys :map your-mode-map
+  ;; ("<key>" . action))
+
+  ;; (bind-key "C-y" 'undo-redo cua-global-keymap)
+#+end_src
+
+* syntax-highlighting.el
+
+#+begin_src elisp
+  (use-package hl-line
+    :ensure nil
+    :hook ((eshell-mode
+            eat-mode
+            shell-mode
+            term-mode
+            comint-mode
+            cfrs-input-mode
+            image-mode
+            vterm-mode)
+           ;; disable hl-line for some modes
+           . (lambda () (setq-local global-hl-line-mode nil))))
+
+  ;; (use-package highlight-thing
+  ;;   :custom-face
+  ;;   (highlight-thing ((t (:background unspecified :inherit (lazy-highlight)))))
+  ;;   :hook ((prog-mode yaml-mode xml-mode mhtml-mode)
+  ;;          . highlight-thing-mode))
+
+  ;;; EXTRA LANGUAGES SYNTAX
+
+  (use-package lua-mode)
+  (use-package markdown-mode)
+  (use-package yaml-mode
+    :mode
+    "\\.clang-format\\'"
+    "\\.clang-tidy\\'"
+    "\\.clangd\\'")
+
+  ;;; IMPROVE SYNTAX HIGHLIGHTING
+
+  (use-package treesit-auto
+    :config
+    (global-treesit-auto-mode))
+
+  ;;; FOLDING USING TREE SITTER
+  (use-package treesit-fold
+    :unless (eq system-type 'android) ; Doesn't work in android
+    :hook
+    (emacs-lisp-mode . (lambda () (my/treesit-parser-for-lang-mode 'elisp)))
+    (xml-mode . (lambda () (my/treesit-parser-for-lang-mode 'xml)))
+    :config
+    (global-treesit-fold-mode t)
+
+    (defun my/treesit-parser-for-lang-mode (lang-mode-symbol)
+      (when (and (treesit-available-p)
+                 (treesit-language-available-p lang-mode-symbol))
+        (treesit-parser-create lang-mode-symbol))))
+
+
+  (use-package treesit-fold-indicators :ensure nil
+    :unless (eq system-type 'android)
+    :if (display-graphic-p)
+    ;; :custom
+    ;; (treesit-fold-indicators-priority 50)
+    :config
+    (global-treesit-fold-indicators-mode t)
+    ;; Menu for Treesit-Fold
+    (easy-menu-add-item nil '("tools")
+                        '("Tree Sitter"
+                          ["Toggle TS-Fold" treesit-fold-mode t]
+                          ["Toggle Ts-Fold Indicator" treesit-fold-indicators-mode t])))
+
+  ;;; OTHERS HIGHLIGHTING
+
+  ;; Braket colorizer
+  (use-package rainbow-delimiters
+    :demand t
+    :hook ((prog-mode yaml-mode xml-mode mhtml-mode)
+           . rainbow-delimiters-mode))
+
+  ;; Colorful-mode preview and change color in-real-time
+  (use-package colorful-mode
+    :diminish
+    :custom
+    (colorful-use-prefix t)
+    (colorful-only-strings 'only-prog)
+    (css-fontify-colors nil)
+    :config
+    (global-colorful-mode t)
+    (add-to-list 'global-colorful-modes 'helpful-mode))
+
+  ;; Pulse modified region
+  (use-package goggles
+    :diminish
+    :hook ((prog-mode text-mode) . goggles-mode))
+
+  ;; TODO Hightlight (Comment-tags)
+  (use-package hl-todo
+    :custom-face
+    (hl-todo ((t (:inherit variable-pitch :height 0.9
+                           :width condensed :weight bold
+                           :underline nil :inverse-video t))))
+    :hook
+    ((prog-mode text-mode) . hl-todo-mode)
+    ((hl-todo-mode
+      eglot-managed-mode)
+     . (lambda ()
+         (add-hook 'flymake-diagnostic-functions
+                   #'hl-todo-flymake nil t)))
+    :custom
+    (hl-todo-require-punctuation t)
+    (hl-todo-highlight-punctuation ":")
+    :config
+    (let ((_error   (face-attribute 'error :foreground))
+          (_warning (face-attribute 'warning :foreground))
+          (_info    (face-attribute 'success :foreground))
+          (_misc    (face-attribute 'nerd-icons-blue :foreground)))
+
+      (dolist (keyword '("BUG" "DEFECT" "ISSUE" "FIX" "FAIL" "FIXME" "FAIL"))
+        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_error)))
+      (dolist (keyword '("WARNING"))
+        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_warning)))
+      (dolist (keyword '("WORKAROUND" "NOTE" "TRICK" "HACK"))
+        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_info)))
+      (dolist (keyword '("DEBUG" "STUB" "TODO"))
+        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_misc))))
+    :preface
+    ;; NOTE: THIS OVERRIDE CAN BECOME OBSOLETE IN THE FUTURE
+    (defun my/hl-todo-flymake (report-fn &rest _plist)
+      (let ((diags nil)
+            (buf (current-buffer))
+            (comment (concat (regexp-quote comment-start) "\\s-+")))
+        (when hl-todo-mode
+          (save-excursion
+            (save-restriction
+              (save-match-data
+                (goto-char (point-min))
+                (while (hl-todo--search)
+                  (let ((beg (match-beginning 0))
+                        (end (pos-eol))
+                        (bol (pos-bol)))
+                    ;; Take whole line when keyword is not at the start of comment
+                    (save-excursion
+                      (goto-char beg)
+                      (unless (looking-back comment bol)
+                        (goto-char bol)
+                        ;; Skip whitespace at the beginning of line
+                        (when (and (not (looking-at-p "\\S-"))
+                                   (re-search-forward "\\S-" beg t))
+                          (forward-char -1))
+                        ;; Skip comment
+                        (re-search-forward comment beg t)
+                        (setq beg (point))))
+                    (push (flymake-make-diagnostic
+                           buf beg end 'hl-todo-flymake
+                           (buffer-substring-no-properties beg end))
+                          diags)))))))
+        (put 'hl-todo-flymake 'flymake-category 'flymake-note)
+        (funcall report-fn (nreverse diags))))
+    (advice-add #'hl-todo-flymake :override #'my/hl-todo-flymake))
+#+end_src
+
+* tool-bar.el
+
+The tool-bar is that feature that almost no one who uses Emacs uses it.
+However, since this is Visual Emacs, we enable it by default.
+
+If you don't want this, you can remove this header.
+
+#+begin_src elisp
+    ;;; FUNCTIONS
+
+  (defun my/run-program ()
+    "Run Current Project of Buffer by its 'major-mode'."
+    (interactive)
+    (cond
+     ((provided-mode-derived-p major-mode
+                               '(emacs-lisp-mode
+                                 lisp-interaction-mode))
+      (eval-buffer))
+     ;; Checks for any major mode derived from C
+     ((provided-mode-derived-p major-mode
+                               '(c-mode c++-mode java-mode csharp-mode))
+      (call-interactively #'projection-commands-run-project))
+     ;; Otherwise just Run QuickRun
+     (t (quickrun))))
+
+  (defun my/build-command ()
+    "Build Current Project."
+    (if (not projection-commands-build-command)
+        (call-interactively #'projection-commands-set-build-command)
+      (call-interactively #'projection-commands-build-project)))
+
+  ;;; ADD TOOL BAR BUTTONS
+  ;; Can Add Submenus in tool bar as: <tool-bar> <copy> COMMAND
+  ;; image scale with :scale
+
+  (when (display-graphic-p)
+    (if (eq system-type 'android)
+        (progn
+          (setopt tool-bar-position 'bottom)
+          (modifier-bar-mode t))
+      (setopt tool-bar-position 'left))
+
+    ;; Fix gtk redo icon
+    ;; THID IS ALREADY FIXED IN EMACS-31
+    (if (boundp 'x-gtk-stock-map)
+        (add-to-list 'x-gtk-stock-map '("etc/images/redo" "edit-redo" "gtk-redo")))
+
+    (tool-bar-add-item-from-menu 'undo-redo "redo" nil) ; Redo
+
+    (keymap-set-after (default-value 'tool-bar-map) "<undo-redo>"
+      (cdr (assq 'undo-redo tool-bar-map))
+      'undo)
+
+    (if (functionp 'vundo)
+        (keymap-set-after (default-value 'tool-bar-map) "<vundo>"
+          '(menu-item "Undo Tree" vundo
+                      :help "Show Visual Undo"
+                      :visible (or (derived-mode-p 'prog-mode)
+                                   (derived-mode-p 'text-mode))
+                      :image (find-image '((:type png :file "tree-widget/default/open.png"))))
+          'isearch-forward))
+    (keymap-set-after (default-value 'tool-bar-map) "<explorer>"
+      '(menu-item "Explorer" my/explorer-open
+                  :help "Hide/Show Side Explorer"
+                  :visible (or (derived-mode-p 'prog-mode)
+                               (derived-mode-p 'text-mode))
+                  :image (find-image `((:type svg :file ,(concat user-emacs-directory "assets/tree_explorer.svg")))))
+      'isearch-forward)
+
+    (keymap-set-after (default-value 'tool-bar-map) "<separator-4>"
+      '(menu-item "" nil
+                  :visible (derived-mode-p 'prog-mode))
+      'my/explorer-open)
+
+    (keymap-set-after (default-value 'tool-bar-map) "<build>"
+      '(menu-item "Build Project" my/build-command
+                  :help "Build/Compile Project"
+                  :visible (derived-mode-p 'prog-mode)
+                  :image (find-image `((:type svg :file ,(concat user-emacs-directory "assets/build_exec.svg")))))
+      'my/explorer-open)
+
+    (keymap-set-after (default-value 'tool-bar-map) "<debug>"
+      '(menu-item "Debug Project" dape
+                  :help "Debug Project"
+                  :visible (derived-mode-p 'prog-mode)
+                  :image (find-image `((:type svg :file ,(concat user-emacs-directory "assets/debug_exc.svg")))))
+      'my/build-command)
+
+    (keymap-set-after (default-value 'tool-bar-map) "<run-program>"
+      '(menu-item "Run Project" my/run-program
+                  :help "Run Project"
+                  :visible (derived-mode-p 'prog-mode)
+                  :image (find-image `((:type svg :file ,(concat user-emacs-directory "assets/run_exc.svg")))))
+      'dape)
+
+    (keymap-set-after (default-value 'tool-bar-map) "<separator-5>"
+      menu-bar-separator 'dap-debug-last) ; Add Separator
+
+    (keymap-set-after (default-value 'tool-bar-map) "<packages>"
+      '(menu-item "packages" list-packages
+                  :help   "Show List Packages"
+                  :image (find-image `((:type svg :file ,(concat user-emacs-directory "assets/elpa.svg")))))
+      'my/run-program)
+    (keymap-set-after (default-value 'tool-bar-map) "<dashboard>"
+      '(menu-item "Dashboard" dashboard-open
+                  :help "Back to Startpage"
+                  :image (find-image '((:type xpm :file "home.xpm"))))
+      'list-packages)
+    (keymap-set-after (default-value 'tool-bar-map) "<customize>"
+      '(menu-item "Settings" customize
+                  :help "Show Settings Buffer"
+                  :image (find-image '((:type xpm :file "preferences.xpm"))))
+      'dashboard-open))
+#+end_src
+
+* menu-bar.el
+
+The same goes for this:
+
+#+begin_src elisp
+  (setq-local my/menu-menu--get-major-modes nil)
+
+  (setq-local my/menu-major-mode-menu-map-extra-modes
+              '(lisp-interaction-mode enriched-mode))
+
+  (setq-local my/menu-excluded-major-modes
+              '(conf-colon-mode
+                conf-xdefaults-mode conf-space-mode conf-javaprop-mode
+                conf-ppd-mode mail-mode compilation-mode
+                ebrowse-tree-mode diff-mode fundamental-mode
+                emacs-lisp-byte-code-mode elisp-byte-code-mode
+                erts-mode R-transcript-mode S-transcript-mode XLS-mode tar-mode
+                git-commit-mode git-rebase-mode image-mode perl-mode
+                octave-maybe-mode makefile-gmake-mode makefile-imake-mode
+                makefile-makepp-mode makefile-bsdmake-mode makefile-automake-mode
+                archive-mode))
+
+  (setq-local my/menu-mode-names
+              '((conf-mode "Config File")
+                (enriched-mode "Enriched Text")
+                (conf-toml-mode "TOML")
+                (ses-mode "Emacs Spreadsheet")
+                (m2-mode "Modula-2")
+                (cperl-mode "Perl (CPerl)")
+                (hexl-mode "Hex Edit")
+                (f90-mode "Fortran 90/95")
+                (objc-mode "Objetive C")
+                (snmpv2-mode "SNMPv2 MIBs")
+                (mhtml-mode "Html (Mhtml)")
+                (snmp-mode "SKMP MIBs")))
+
+  (defun my/menu-menu--get-major-mode-name (mode)
+    "Gets the MODE language name.
+  Tries to get the value from `my/menu-mode-names'.  If not guess the language name."
+    (let ((ret (assoc mode my/menu-mode-names)))
+      (if (not ret)
+          (setq ret (replace-regexp-in-string
+                     "-" " "
+                     (replace-regexp-in-string
+                      "-mode" ""
+                      (symbol-name mode))))
+        (setq ret (car (cdr ret))))
+      (setq ret (concat (upcase (substring ret 0 1))
+                        (substring ret 1)))
+      ret))
+
+  (defun my/menu-menu--get-major-modes ()
+    "Gets a list of language modes known to `my/menu-mode'.
+  This gets all major modes known from the variables:
+  -  `interpreter-mode-alist';
+  -  `magic-mode-alist'
+  -  `magic-fallback-mode-alist'
+  -  `auto-mode-alist'
+  - `my/menu-major-mode-menu-map-extra-modes'
+  - `global-treesit-auto-modes'
+
+  All other modes are assumed to be minor modes or unimportant.
+  "
+    ;; Get known major modes
+    (let ((ret '())
+          all dups cur-lst current-letter
+          added-modes
+          (modes '()))
+      (dolist (elt (append
+                    my/menu-major-mode-menu-map-extra-modes
+                    global-treesit-auto-modes))
+        (unless (memq elt modes)
+          (when (and (functionp elt)
+                     (ignore-errors (string-match "-mode$" (symbol-name elt))))
+            (unless (or (memq elt my/menu-excluded-major-modes)
+                        (member (downcase (symbol-name elt)) added-modes))
+              (let* ((name (my/menu-menu--get-major-mode-name elt))
+                     (first (upcase (substring name 0 1))))
+                (if (member first all)
+                    (unless (member first dups)
+                      (push first dups))
+                  (push first all))
+                (push (list elt 'menu-item
+                            name
+                            elt)
+                      ret))
+              (push (downcase (symbol-name elt)) added-modes)
+              (push elt modes)))))
+      (dolist (elt (append
+                    interpreter-mode-alist
+                    magic-mode-alist
+                    magic-fallback-mode-alist
+                    auto-mode-alist))
+        (unless (memq (cdr elt) modes)
+          (when (and (functionp (cdr elt))
+                     (ignore-errors (string-match "-mode$" (symbol-name (cdr elt)))))
+            (unless (or (memq (cdr elt) my/menu-excluded-major-modes)
+                        (member (downcase (symbol-name (cdr elt))) added-modes))
+              (let* ((name (my/menu-menu--get-major-mode-name (cdr elt)))
+                     (first (upcase (substring name 0 1))))
+                (if (member first all)
+                    (unless (member first dups)
+                      (push first dups))
+                  (push first all))
+                (push (list (cdr elt) 'menu-item
+                            name
+                            (cdr elt))
+                      ret))
+              (push (downcase (symbol-name (cdr elt))) added-modes)
+              (push (cdr elt) modes)))))
+      (setq modes (sort ret (lambda(x1 x2) (string< (downcase (nth 2 x2))
+                                                    (downcase (nth 2 x1)))))
+            my/menu-menu--get-major-modes (mapcar (lambda(x) (intern x)) added-modes))
+      (setq ret '())
+      (dolist (elt modes)
+        (let ((this-letter (upcase (substring (nth 2 elt) 0 1))))
+          (cond
+           ((not (member this-letter dups))
+            ;; not duplicated -- add prior list and push current element.
+            (when cur-lst
+              (push `(,(intern current-letter) menu-item ,current-letter
+                      (keymap ,@cur-lst)) ret))
+            (push elt ret)
+            (setq current-letter this-letter)
+            (setq cur-lst nil))
+           ((not (equal this-letter current-letter))
+            ;; duplicated, but not last letter.
+            (when cur-lst
+              (push `(,(intern current-letter) menu-item ,current-letter
+                      (keymap ,@cur-lst)) ret))
+            (setq cur-lst nil)
+            (setq current-letter this-letter)
+            (push elt cur-lst))
+           (t
+            ;; duplicated and last letter
+            (push elt cur-lst)))))
+      (when cur-lst
+        (push `(,(intern current-letter) menu-item ,current-letter
+                (keymap ,@cur-lst)) ret))
+      ;; Now create nested menu.
+      `(keymap ,@ret
+               (separator1 menu-item "--")
+               (package menu-item  "Find more languages" list-packages))))
+
+  ;;; Major Modes Menu
+  (keymap-set-after (current-global-map) "<menu-bar> <major-modes-menu>"
+    (cons "Lang-Modes"  (my/menu-menu--get-major-modes))
+    'view)
+  
+  ;;; Search menu
+  (fset 'menu-bar-replace-menu menu-bar-replace-menu)
+  (fset 'menu-bar-search-menu  menu-bar-search-menu)
+  (fset 'menu-bar-goto-menu    menu-bar-goto-menu)
+
+  (keymap-set-after (current-global-map) "<menu-bar> <search>"
+    (cons "Search"
+          '(keymap
+            (isearch-forward menu-item "String Forward..." isearch-forward
+                             :help "Search forward for a string as you type it")
+            (isearch-backward menu-item "    Backward..." isearch-backward
+                              :help "Search backwards for a string as you type it")
+            (re-isearch-forward menu-item "Regexp Forward..." isearch-forward-regexp
+                                :help "Search forward for a regular expression as you type it")
+            (re-isearch-backward menu-item "    Backward..." isearch-backward-regexp
+                                 :help "Search backwards for a regular expression as you type it")
+            (separator-isearch menu-item "--")
+            (i-search menu-item "String Search" menu-bar-search-menu)
+
+            (replace menu-item "Replace" menu-bar-replace-menu)
+
+            (separator-go-to menu-item "--" )
+
+            (goto menu-item "Go To" menu-bar-goto-menu)
+
+            (bookmark menu-item "Bookmarks" menu-bar-bookmark-map)
+            "Search"))
+    'edit)
+  
+  ;;; Edit menu
+  (keymap-unset (current-global-map) "<menu-bar> <edit> <i-search>")
+  (keymap-unset (current-global-map) "<menu-bar> <edit> <search>")
+  (keymap-unset (current-global-map) "<menu-bar> <edit> <replace>")
+  (keymap-unset (current-global-map) "<menu-bar> <edit> <goto>")
+  (keymap-unset (current-global-map) "<menu-bar> <edit> <bookmark>")
+
+  (keymap-set-after (current-global-map) "<menu-bar> <edit> <blank-operations>"
+    (cons "Blank/Whitespace Operations"
+          '(keymap
+            (trim-trailing-space menu-item
+                                 "Trim Trailing Space"
+                                 delete-trailing-whitespace
+                                 :help "Trim Trailing spaces on each line")
+            (separator-tabify menu-item "--")
+            (tabify-region menu-item
+                           "Change multiple spaces to tabs (Tabify)"
+                           (lambda() (interactive)
+                             (if mark-active
+                                 (tabify (region-beginning)
+                                         (region-end))
+                               (tabify (point-min) (point-max))))
+                           :help "Convert multiple spaces in the nonempty region to tabs when possible"
+                           :enable  (not buffer-read-only))
+            (untabify menu-item
+                      "Change Tabs To Spaces (Untabify)"
+                      (lambda() (interactive)
+                        (if mark-active
+                            (untabify (region-beginning)
+                                      (region-end))
+                          (untabify (point-min) (point-max))))
+                      :help "Convert all tabs in the nonempty region or buffer to multiple spaces"
+                      :enable (not buffer-read-only))))
+    'separator-search)
+
+  (keymap-set-after (current-global-map) "<menu-bar> <edit> <change-case>"
+    (cons "Convert Case To"
+          '(keymap
+            (capitalize-region menu-item
+                               "Capitalize" capitalize-region
+                               :help "Capitalize (initial caps) words in the nonempty region"
+                               :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (downcase-region menu-item
+                             "downcase" downcase-region
+                             :help "Make words in the nonempty region lower-case"
+                             :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (upcase-region menu-item "UPCASE" upcase-region
+                           :help "Make words in the nonempty region upper-case"
+                           :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning)))))
+          )
+    'blank-operations)
+
+  (keymap-set-after (current-global-map) "<menu-bar> <edit> <sort>"
+    (cons "Sort"
+          '(keymap
+            (regexp-fields menu-item
+                           "Regexp Fields" sort-regexp-fields
+                           :help "Sort the nonempty region lexicographically"
+                           :enable (and last-kbd-macro
+                                        (not buffer-read-only)
+                                        mark-active
+                                        (> (region-end) (region-beginning))))
+            (pages menu-item
+                   "Pages" sort-pages
+                   :help "Sort pages in the nonempty region alphabetically"
+                   :enable (and last-kbd-macro
+                                (not buffer-read-only)
+                                mark-active
+                                (> (region-end) (region-beginning))))
+            (sort-paragraphs menu-item
+                             "Alphabetically" sort-paragraphs
+                             :help "Sort paragraphs in the nonempty region alphabetically"
+                             :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (sort-numeric-fields menu-item
+                                 "Numeric Field" sort-numeric-fields
+                                 :help "Sort lines in the nonempty region numerically by the Nth field"
+                                 :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (sort-fields menu-item
+                         "Field" sort-fields
+                         :help "Sort lines in the nonempty region lexicographically by the Nth field"
+                         :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (sort-columns menu-item
+                          "Columns" sort-columns
+                          :help "Sort lines in the nonempty region alphabetically, by a certain range of columns"
+                          :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (sort-lines menu-item
+                        "Lines" sort-lines
+                        :help "Sort lines in the nonempty region alphabetically"
+                        :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning))))
+            (reverse-region menu-item "Reverse" reverse-region
+                            :help "Reverse the order of the selected lines"
+                            :enable (and (not buffer-read-only)  mark-active  (> (region-end) (region-beginning)))))
+          )
+    'change-case)
+
+  (keymap-set-after (current-global-map) "<menu-bar> <edit> <facemenu>"
+    '(menu-item "Text Properties" facemenu-menu)
+    'sort)
+
+  (easy-menu-add-item (lookup-key global-map [menu-bar file])
+                      nil
+                      ["Restart Emacs" restart-emacs
+                       :help "Kill the current Emacs process and start a new one"]
+                      "Quit")
+#+end_src
+
+* minibuffer.el
+
+#+begin_src elisp
+    ;;; ENABLE RICH ANNOTATIONS USING THE MARGINALIA PACKAGE
+  
+  (use-package marginalia
+    :custom
+    (marginalia-mode t)
+    :preface
+    (advice-add #'marginalia-annotate-command
+                :around (lambda (orig cand)
+                          "Annotate minor-mode command CAND with mode state."
+                          (concat
+                           (when-let* ((sym (intern-soft cand))
+                                       (mode (if (and sym (boundp sym))
+                                                 sym
+                                               (lookup-minor-mode-from-indicator cand))))
+                             (if (and (boundp mode) (symbol-value mode))
+                                 #(" [On]" 1 5 (face marginalia-on))
+                               #(" [Off]" 1 6 (face marginalia-off))))
+                           (funcall orig cand))))
+
+    (advice-add #'marginalia--documentation :override
+                (lambda (str)
+                  "Show current mode state"
+                  (if str
+                      (marginalia--fields
+                       (str :truncate 1.2 :face 'marginalia-documentation))))))
+
+  ;;; CONSULT UI
+  
+  (use-package consult
+    :demand t
+    :hook (completion-list-mode . consult-preview-at-point-mode)
+    :custom
+    (xref-show-xrefs-function       #'consult-xref) ; Use Consult to select xref locations with preview
+    (xref-show-definitions-function #'consult-xref)
+    (register-preview-function #'consult-register-format)
+    (consult-find-command    "fd --color=always --full-path ARG OPTS")
+    :bind ("<remap> <imenu>" . consult-imenu)
+    :config
+    ;; Preview on any key press, but delay 2s
+    (consult-customize
+     consult-recent-file consult-theme consult-buffer consult-bookmark
+     :preview-key '(:debounce 2 any))
+    (advice-add #'project--read-file-cpd-relative :around
+                (lambda (_ prompt all-files &optional pred hist __)
+                  "Use consult for previewing files"
+                  (consult--read (mapcar
+                                  (lambda (f)
+                                    (file-relative-name f))
+                                  all-files)
+                                 :state (consult--file-preview)
+                                 :prompt (format "%s: " prompt)
+                                 :require-match t
+                                 :history hist
+                                 :category 'file
+                                 :preview-key '(:debounce 2 any)
+                                 :predicate pred))))
+
+  ;;; VERTICO MINIBUFFER UI
+  
+  (use-package vertico
+    :ensure vertico-prescient
+    :custom
+    (minibuffer-prompt-properties
+     '(
+       read-only t
+       cursor-intangible t
+       face (:inherit minibuffer-prompt :weight bold :height 1.3)))
+    (vertico-count 14)
+    (vertico-count-format
+     `("%-6s " . ,(concat (nerd-icons-octicon "nf-oct-search")
+                          " ( %s/%s )")))
+    (vertico-mode t)
+    (vertico-multiform-mode t)
+    (vertico-mouse-mode t)
+    :config
+    (advice-add
+     #'vertico--format-candidate :around
+     (lambda (orig-fun cand prefix suffix index start)
+       (apply orig-fun (list cand
+                             (if (= vertico--index index)
+                                 (concat (nerd-icons-faicon
+                                          "nf-fa-hand_o_right"
+                                          :face 'nerd-icons-red)
+                                         "  " prefix)
+                               (concat "   " prefix))
+                             suffix
+                             index start)))))
+
+  ;;; Center Echo Area
+  
+  (defun message-filter-center (args)
+    "ARGS Center message string.
+  This is a :filter-args advice for `message`."
+    (if (car args)
+        (with-current-buffer (window-buffer (minibuffer-window))
+          (let ((str (apply #'format-message args)))
+            (list "%s" (propertize str 'line-prefix (list 'space :align-to (max 0 (/ (- (window-width (minibuffer-window)) (string-width str)) 2)))))))
+      args))
+  (advice-add #'message :filter-args #'message-filter-center)
+#+end_src
+
+* ui-enchantment.el
+
+#+begin_src elisp
+  ;;; Emoji:
+  (if-let* ((font "Segoe UI Emoji")
+            ((member font (font-family-list))))
+      (set-fontset-font t 'emoji (font-spec :family font) nil 'prepend))
+
+  (if (eq system-type 'android)
+      (set-face-attribute 'default nil :height 140))
+
+  (use-package form-feed-st
+    :diminish
+    :config (global-form-feed-st-mode 1)
+    (dolist (modes '(browse-kill-ring-mode
+                     emacs-lisp-compilation-mode
+                     outline-mode
+                     help-mode))
+      (add-to-list 'form-feed-st-include-modes modes)))
+
+  (use-package fill-column
+    :ensure nil
+    :hook
+    ((prog-mode text-mode) . display-fill-column-indicator-mode)
+    ;; warns the user if the cursor is above of 'fill-column' limit.
+    (display-fill-column-indicator-mode
+     . (lambda ()
+         (add-hook
+          'post-command-hook
+          (lambda ()
+            (if (> (current-column) fill-column)
+                (progn
+                  (setq-local
+                   display-fill-column-indicator-character 9475)
+                  (face-remap-set-base 'fill-column-indicator
+                                       (list :inherit 'error :stipple nil
+                                             :box nil :strike-through nil
+                                             :overline nil :underline nil)))
+              (setq-local
+               display-fill-column-indicator-character 9474)
+              (face-remap-reset-base 'fill-column-indicator)))
+          nil t))))
+
+  (setopt window-divider-default-places t
+          window-divider-default-bottom-width 4
+          window-divider-default-right-width  4)
+
+  ;;; ADD ANSI COLOR TO COMPILATION BUFFER
+  (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
+
+  ;;; ADD LINK TO ERROR IN TERMINALS OR SHELLS
+  (use-package shell :ensure nil
+    :hook ((term-mode
+            eat-mode
+            vterm-mode
+            shell-mode
+            eshell-mode)
+           . compilation-shell-minor-mode))
+
+  ;;; Change cursor type if current cursor type is bar
+  (use-package electric-cursor
+    :diminish
+    :custom
+    (electric-cursor-mode t))
+
+  ;;; Show Paren when inside of them
+  (define-advice show-paren-function (:around (fn) fix)
+    "Highlight enclosing parens."
+    (cond ((looking-at-p "\\s(") (funcall fn))
+          (t (save-excursion
+               (ignore-errors (backward-up-list))
+               (funcall fn)))))
+
+  ;;; Display scrollbar only on selected buffer
+  ;; (defun update-scroll-bars ()
+  ;;     (interactive)
+  ;;     (mapc (lambda (win)
+  ;;               (set-window-scroll-bars win nil))
+  ;;           (window-list))
+  ;;     (set-window-scroll-bars (selected-window) 10 'right))
+
+  ;; (add-hook 'window-configuration-change-hook 'update-scroll-bars)
+  ;; (add-hook 'buffer-list-update-hook          'update-scroll-bars)
+
+  ;;; LINE NUMBER
+  (setopt
+   ;; Explicitly define a width to reduce the cost of on-the-fly computation
+   display-line-numbers-width 3
+   ;; Show absolute line numbers for narrowed regions to make it easier to tell the
+   ;; buffer is narrowed, and where you are, exactly.
+   display-line-numbers-widen t)
+
+  ;; (setopt help-at-pt-display-when-idle t) ;; SHOW ANY TOOLTIP IN ECHO BUFFER
+
+  (use-package indent-bars
+    :unless (eq system-type 'android) ; Slow
+    :commands indent-bars-mode
+    :hook ((prog-mode
+            yaml-ts-mode
+            xml-mode
+            html-ts-mode
+            conf-toml-mode
+            toml-ts-mode)
+           . indent-bars-mode)
+    :custom
+    (indent-bars-no-stipple-char 9615)
+    (indent-bars-depth-update-delay 0.1)
+    (indent-bars-display-on-blank-lines nil)
+    (indent-bars-starting-column 0)
+    (indent-bars-color-by-depth
+     `(:regexp ,(rx (seq "rainbow-delimiters-depth-" (1+ (group num))))
+               :blend 1))
+    (indent-bars-highlight-current-depth '(:blend 1 :width 0.3))
+    (indent-bars-pad-frac 0)
+    (indent-bars-width-frac 0.1)
+    (indent-bars-pattern ".")
+    (indent-bars-treesit-support t)
+    (indent-bars-treesit-ignore-blank-lines-types '("module"))
+    ;; WARNING: THIS VARIABLE BUGS WITH WHITESPACE NEWLINES
+    (indent-bars-treesit-wrap
+     '((python
+        argument_list parameters
+        list list_comprehension
+        dictionary dictionary_comprehension
+        parenthesized_expression subscript)
+
+       (c
+        argument_list parameter_list init_declarator
+        comment)
+
+       (cpp
+        argument_list parameter_list init_declarator
+        comment)
+
+       (lua
+        expression_list
+        function_declaration if_statement elseif_statement
+        else_statement while_statement for_statement
+        repeat_statement comment)
+       (javascript
+        export_clause statement_block
+        object array comment)
+       (toml
+        table array comment)
+       (yaml
+        block_mapping_pair comment))))
+
+  ;;; MINIMAP
+  (use-package minimap
+    :hook (prog-mode . minimap-mode))
+
+  ;;; Sideline
+  (use-package sideline)
+
+  ;;; CENTER BUFFER
+  (use-package olivetti
+    :custom
+    (olivetti-style 'fancy)
+    (olivetti-body-width 100)
+    :hook ((Custom-mode Info-mode image-mode) . olivetti-mode))
+
+  ;;; Enable 'All-the-icons' and 'Nerd-icons'
+  (use-package nerd-icons :demand t)
+  (use-package nerd-icons-completion
+    :demand t
+    :hook
+    (marginalia-mode . nerd-icons-completion-marginalia-setup)
+    (after-init . nerd-icons-completion-mode))
+
+  (use-package breadcrumb
+    :hook
+    (prog-mode . breadcrumb-local-mode)
+    :custom
+    (breadcrumb-imenu-crumb-separator
+     (concat " "(nerd-icons-mdicon "nf-md-chevron_right") " "))
+    (breadcrumb-project-crumb-separator
+     (concat " "(nerd-icons-mdicon "nf-md-chevron_right") " "))
+    (breadcrumb-imenu-max-length 0.5)
+    (breadcrumb-project-max-length 0.5)
+    :preface
+    ;; Add icons to breadcrumb
+    (advice-add #'breadcrumb--format-project-node :around
+                (lambda (og p more &rest r)
+                  "Icon For File"
+                  (let ((string (apply og p more r)))
+                    (if (not more)
+                        (concat (nerd-icons-icon-for-file string)
+                                " " string)
+                      (concat (nerd-icons-faicon
+                               "nf-fa-folder_open"
+                               :face 'breadcrumb-project-crumbs-face)
+                              " "
+                              string)))))
+
+    (advice-add #'breadcrumb--project-crumbs-1 :filter-return
+                (lambda (return)
+                  "Icon for Parent Node"
+                  (if (listp return)
+                      (setf (car return)
+                            (concat
+                             " "
+                             (nerd-icons-faicon
+                              "nf-fa-rocket"
+                              :face 'breadcrumb-project-base-face)
+                             " "
+                             (car return))))
+                  return))
+
+    (advice-add #'breadcrumb--format-ipath-node :around
+                (lambda (og p more &rest r)
+                  "Icon for items"
+                  (let ((string (apply og p more r)))
+                    (if (not more)
+                        (concat (nerd-icons-codicon
+                                 "nf-cod-symbol_field"
+                                 :face 'breadcrumb-imenu-leaf-face)
+                                " " string)
+                      (cond ((string= string "Packages")
+                             (concat (nerd-icons-codicon "nf-cod-package" :face 'breadcrumb-imenu-crumbs-face) " " string))
+                            ((string= string "Requires")
+                             (concat (nerd-icons-codicon "nf-cod-file_submodule" :face 'breadcrumb-imenu-crumbs-face) " " string))
+                            ((or (string= string "Variable") (string= string "Variables"))
+                             (concat (nerd-icons-codicon "nf-cod-symbol_variable" :face 'breadcrumb-imenu-crumbs-face) " " string))
+                            ((string= string "Function")
+                             (concat (nerd-icons-mdicon "nf-md-function_variant" :face 'breadcrumb-imenu-crumbs-face) " " string))
+                            (t string)))))))
+#+end_src
+
+* misc.el
+
+#+begin_src elisp
+  ;;; MISC
+  
+  ;; INSERT NEWLINE IN BRACKETS
+  (add-hook 'c-mode-common-hook  #'c-toggle-auto-newline)
+
+  (advice-add 'consult-buffer :before
+              (lambda (&rest _)
+                (recentf-mode +1)))
+
+  (advice-add 'consult-recent-file :before
+              (lambda (&rest _)
+                (recentf-mode +1)))
+
+  ;; BEST GIT GUI.
+  (use-package magit
+    :unless (eq system-type 'android) ; WHY YOU'D WANT TO USE IT ON ANDROID?
+    :custom
+    (magit-format-file-function #'magit-format-file-nerd-icons))
+
+  ;; TERMINAL EMULATOR, CHOOSE THE ONE YOU PREFER
+  (use-package eat
+    :unless (or (eq system-type 'android)
+                (eq system-type 'windows-nt)))
+
+  ;;; WHITESPACES
+  (use-package whitespace
+    :diminish
+    :ensure nil
+    :hook ((prog-mode
+            yaml-ts-mode
+            xml-mode
+            html-ts-mode
+            conf-toml-mode
+            toml-ts-mode)
+           . whitespace-mode)
+    (picture-mode . (lambda () (whitespace-mode -1)))
+    (diff-mode . (lambda () (whitespace-mode -1)))
+    (whitespace-mode . word-wrap-whitespace-mode)
+    :custom
+    ;; (whitespace-action '(auto-cleanup warn-if-read-only)) ; optional
+    (whitespace-line-column nil)
+    (whitespace-style '(face tabs spaces trailing space-mark
+                             tab-mark newline-mark)))
+
+  ;; AUTO FORMAT CODE AT SAVING
+  (use-package apheleia
+    :custom
+    (apheleia-hide-log-buffers t)
+    (apheleia-global-mode t))
+
+  ;; AUTO CLOSE BLOCK COMMENT IN C DERIVED MODES
+  (use-package elec-pair
+    :ensure nil
+    :custom
+    (electric-pair-open-newline-between-pairs t)
+    :hook
+    ((prog-mode text-mode conf-mode) . electric-pair-mode)
+    ((c-mode-common
+      c-ts-base-mode
+      js-ts-mode css-ts-mode json-ts-mode typescript-ts-base-mode
+      go-ts-mode go-mode-ts-mode rust-ts-mode
+      java-ts-mode csharp-ts-mode)
+     . (lambda ()
+         (add-hook 'post-self-insert-hook
+                   (lambda ()
+                     (when (and (looking-back "/[*]" 2)
+                                (null (re-search-forward "[^ \t]"
+                                                         (line-end-position) t)))
+                       (insert " ")
+                       (save-excursion
+                         (insert " */"))))
+                   nil t))))
+
+  ;;; Helpful (provides much more contextual information)
+  (use-package helpful
+    :config
+    ;; Shut down echo elisp messages in helpful
+    (setopt elisp-refs-verbose nil)
+    :hook (helpful-mode . (lambda ()
+                            (interactive)
+                            (setq-local tool-bar-map help-mode-tool-bar-map))))
+
+  ;;; RUN OR COMPILE CURRENT BUFFER
+  (use-package quickrun
+    :demand t
+    :hook
+    (quickrun--mode . comint-mode)
+    (quickrun-after-run
+     . (lambda ()
+         "Shrink the quickrun output window once code evaluation is complete"
+         (when-let* (win (get-buffer-window quickrun--buffer-name))
+           (with-selected-window (get-buffer-window quickrun--buffer-name)
+             (let ((ignore-window-parameters t))
+               (shrink-window-if-larger-than-buffer))))
+
+         ;; Ensures window is scrolled to BOF on invocation.
+         (when-let* (win (get-buffer-window quickrun--buffer-name))
+           (with-selected-window win
+             (goto-char (point-min))))))
+    :config
+    (setopt quickrun-focus-p nil)
+
+    (advice-add 'quickrun :before ;; add quickrun-region?
+                (lambda (&rest _)
+                  (when-let* (win (get-buffer-window quickrun--buffer-name))
+                    (let ((inhibit-message t))
+                      (quickrun--kill-running-process)
+                      (message ""))
+                    (delete-window win)))))
+
+  ;; Enable Comint in
+  (advice-add #'compile :around
+              (lambda (orig-fn command &rest _)
+                (apply orig-fn command '(t))))
+
+  ;; Shrink Compilation Buffer once it finished
+  (add-hook 'compilation-finish-functions
+            (lambda (buf _)
+              (when-let* ((win (get-buffer-window buf 'visible)))
+                (with-selected-window (get-buffer-window buf 'visible)
+                  (let ((ignore-window-parameters t))
+                    (shrink-window-if-larger-than-buffer))))))
+
+  (advice-add #'customize-dirlocals :around
+              (lambda (orig-fn &rest args)
+                (if-let* ((project (project-current))
+                          (default-directory (project-root project)))
+                    (progn
+                      (apply orig-fn args)
+                      (olivetti-mode))
+                  (progn
+                    (apply orig-fn args)
+                    (olivetti-mode)))))
+
+  ;; RipGrep
+  (use-package rg
+    :preface
+    (defun rg-project-el (query)
+      (interactive (list (rg-read-pattern nil)))
+      (let*
+          ((literal nil) (confirm nil) (dir (rg-project-root buffer-file-name))
+           (files "*")
+           (ignored-files (mapcar (lambda (val) (concat "--glob !" val))
+                                  project-vc-ignores))
+           (flags
+            (funcall rg-command-line-flags-function
+                     ignored-files)))
+        (rg-run query files dir literal confirm flags))))
+
+  ;; Prefer ripgrep, then ugrep, and fall back to regular grep.
+  (setopt xref-search-program
+          (cond
+           ((or (executable-find "ripgrep")
+                (executable-find "rg"))
+            'ripgrep)
+           ((executable-find "ugrep")
+            'ugrep)
+           (t
+            'grep)))
+
+  ;;; PROJECT MANAGEMENT
+  (use-package project
+    :ensure nil
+    :custom
+    (project-vc-extra-root-markers
+     '(".project" ".dir-locals.el" "*.gemspec" "autogen.sh" "GTAGS" "TAGS"
+       "configure.ac" "configure.in" "cscope.out" "rebar.config" "project.clj"
+       "build.boot" "deps.edn" "SConstruct" "default.nix" "flake.nix" "pom.xml"
+       "build.sbt" "build.sc" "gradlew" "build.gradle" ".ensime" "Gemfile"
+       "requirements.txt" "setup.py" "tox.ini" "composer.json" "Cargo.toml"
+       "mix.exs" "stack.yaml" "dune-project" "info.rkt" "DESCRIPTION" "TAGS"
+       "GTAGS" "configure.in" "autoconf old styl" "configure.ac" "cscope.out"
+       "CMakeLists.txt" "WORKSPACE" "debian/control"))
+    (project-vc-ignores '(".elc" ".pyc" ".o" ".github"))
+    :config
+    ;; Better Project.el Menu
+    (keymap-unset (current-global-map) "<menu-bar> <tools> <project>")
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<ripgrep-search>"
+      '(menu-item "Find with ripgrep (rg)" rg-project-el)
+      'project-or-external-find-regexp)
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<dir-locals>"
+      '(menu-item "Customize Dirlocals" customize-dirlocals)
+      'project-switch-project)
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<build-command>"
+      '(menu-item "Set Build Command" projection-commands-set-build-command
+                  :help
+                  "The command to use with projection-commands-build-project.
+  You can set via .dir-locals.el too.")
+      'dir-locals)
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<run-command>"
+      '(menu-item "Set Run Command" projection-commands-set-run-command
+                  :help
+                  "The command to use with projection-commands-run-project.
+  You can set via .dir-locals.el too.")
+      'build-command)
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<build>"
+      '(menu-item "Build Project..." projection-commands-build-project)
+      'project-compile)
+
+    (keymap-set-after (default-value 'menu-bar-project-menu) "<run>"
+      '(menu-item "Run Project..." projection-commands-run-project)
+      'build)
+
+    (keymap-set-after (current-global-map) "<menu-bar> <projects>"
+      menu-bar-project-item
+      'tools)
+    ;; NOT SURE WHY DUPLICATED
+    (put 'projection-commands-run-command 'custom-type (purecopy '(choice (string :tag "String") (other :tag "Nothing"))))
+    (put 'projection-commands-build-command 'custom-type (purecopy '(choice (string :tag "String") (other :tag "Nothing"))))
+    (put 'projection-commands-configure-command 'custom-type (purecopy '(choice (string :tag "String") (other :tag "Nothing"))))
+
+    (let ((type (purecopy '(choice (string :tag "String") (other :tag "Nothing")))))
+      (put 'projection-commands-run-command 'custom-type type)
+      (put 'projection-commands-configure-command 'custom-type type)
+      (put 'projection-commands-build-command 'custom-type type)
+
+      (put 'projection-commands-run-command 'safe-local-variable #'stringp)
+      (put 'projection-commands-configure-command 'safe-local-variable #'stringp)
+      (put 'projection-commands-build-command 'safe-local-variable #'stringp))
+
+    (use-package projection
+      :ensure projection-multi
+      :hook
+      (after-init . global-projection-hook-mode)
+      :config
+      (use-package consult-compile-multi
+        :after compile-multi
+        :demand t
+        :config (consult-compile-multi-mode))))
+
+  ;; Optionally projectile support
+  ;;; WARNING: OUTDATED, USE AT YOUR OWN RISK
+  ;; (use-package projectile
+  ;;   :diminish projectile-mode
+  ;;   :bind (:map projectile-mode-map
+  ;;               ("C-c p" . projectile-command-map))
+  ;;   :custom
+  ;;   (projectile-enable-caching (not noninteractive))
+  ;;   (projectile-require-project-root nil)
+  ;;   :config
+  ;;   (dolist (my-list '(".elc" ".pyc" ".o"))
+  ;;     (add-to-list 'projectile-globally-ignored-file-suffixes my-list))
+
+  ;;   (dolist (my-list '("^\\.github$"))
+  ;;     (add-to-list 'projectile-globally-ignored-directories my-list))
+
+  ;;   (dolist (my-list '(".project"))
+  ;;     (add-to-list 'projectile-project-root-files-bottom-up my-list))
+
+  ;;   (projectile-mode t)
+  ;;   ;; Enable Projectile integration to Consult
+  ;;   (use-package consult-projectile
+  ;;     :custom
+  ;;     (consult-project-function (lambda (_) (projectile-project-root)))
+  ;;     :config
+  ;;     ;; Use Consult functions instead Default
+  ;;     (defalias 'projectile-find-file        #'consult-projectile-find-file)
+  ;;     (defalias 'projectile-find-dir         #'consult-projectile-find-dir)
+  ;;     (defalias 'projectile-switch-to-buffer #'consult-projectile-switch-to-buffer)
+  ;;     (defalias 'projectile-switch-project   #'consult-projectile-switch-project)
+  ;;     (defalias 'projectile-recentf          #'consult-projectile-recentf)))
+
+  (use-package woman
+    :ensure nil
+    :hook (woman-mode . olivetti-mode)
+    :config
+    (dolist (paths '("C:/msys64/usr/man"
+                     "C:/msys64/usr/local/man"
+                     "C:/msys64/usr/share/man"
+                     "C:/msys64/ucrt64/local/man"
+                     "C:/msys64/ucrt64/share/man"
+                     "C:/msys64/share/man"
+                     ))
+      (add-to-list 'woman-manpath paths)))
+#+end_src
+
+* syntax-checking.el
+
+#+begin_src elisp
+    ;;; FLYMAKE
+  
+  (use-package flymake :ensure nil
+    :unless (eq system-type 'android) ; DOESN'T WORK ON ANDROID
+    :bind
+    (:map flymake-mode-map
+          ("<left-fringe> <mouse-1>" . nil))
+    :hook
+    (prog-mode . flymake-mode)
+    (flymake-mode . (lambda () (setq-local left-margin-width 2)))
+    ;; Resize margins size when scaling.
+    ;; (text-scale-mode . (lambda ()
+    ;;                      (if (and flymake-mode
+    ;;                               (> text-scale-mode-amount -1))
+    ;;                          (setq-local left-margin-width (+ (abs text-scale-mode-amount) 2))
+    ;;                        (setq-local left-margin-width 2))
+    ;;                      (set-window-buffer (selected-window) (current-buffer))))
+    ((flymake-diagnostics-buffer-mode
+      flymake-project-diagnostics-mode)
+     . (lambda ()
+         (if (display-graphic-p)
+             (text-scale-decrease 1))))
+    :custom
+    (flymake-indicator-type 'margins)
+    (flymake-margin-indicators-string
+     `((error ,(nerd-icons-faicon "nf-fa-remove_sign") compilation-error)
+       (warning ,(nerd-icons-faicon "nf-fa-warning") compilation-warning)
+       (note ,(nerd-icons-faicon "nf-fa-circle_info") compilation-info)
+       (hl-todo-flymake ,(nerd-icons-mdicon "nf-md-content_paste") nerd-icons-blue)))
+    (flymake-show-diagnostics-at-end-of-line 'short)
+    :config
+    (keymap-set-after (default-value 'flymake-menu) "<list-project-problems>"
+      '(menu-item "List all Project Problems" flymake-show-project-diagnostics)
+      'List\ all\ problems)
+    ;; More Spaces for the Error List Row
+    (setf (cadr (aref flymake--diagnostics-base-tabulated-list-format 2)) 10)
+    ;; Improve UI Checkers
+    (advice-add #'flymake--indicator-overlay-spec
+                :filter-return
+                (lambda (indicator)
+                  (concat indicator
+                          (propertize " "
+                                      'face 'default
+                                      'display `((margin left-margin)
+                                                 (space :width 5))))))
+
+    (put 'flymake-error 'flymake-type-name " error")
+    (put 'flymake-warning 'flymake-type-name " warning")
+    (put 'flymake-note 'flymake-type-name " note")
+
+    (put 'hl-todo-flymake 'face nil)
+    (put 'hl-todo-flymake 'flymake-type-name " TODO")
+    (put 'hl-todo-flymake 'mode-line-face 'nerd-icons-blue)
+    (put 'hl-todo-flymake 'flymake-margin-string
+         (alist-get 'hl-todo-flymake flymake-margin-indicators-string)))
+
+  ;;; FLYCHECK
+  
+  ;; WARNING: OUTDATED, USE AT YOUR OWN RISK
+  ;; (use-package flycheck
+  ;;   :unless (eq system-type 'android)
+  ;;   :hook
+  ;;   (prog-mode . flycheck-mode)
+  ;;   (flycheck-mode . (lambda ()
+  ;;                      (add-hook 'text-scale-mode-hook
+  ;;                                #'setup-prog-mode-left-margin 0 t)
+  ;;                      (add-hook 'window-configuration-change-hook
+  ;;                                #'setup-prog-mode-left-margin 0 t)))
+  ;;   (flycheck-error-list-mode . (lambda ()
+  ;;                                 (if (display-graphic-p)
+  ;;                                     (text-scale-decrease 1))))
+  ;;   :custom
+  ;;   (flycheck-disabled-checkers '(emacs-lisp-checkdoc)) ; Disable Check Doc
+  ;;   ;; flycheck-temp-prefix ".flycheck" ; Change flycheck temp name
+  ;;   (flycheck-indication-mode 'left-margin) ; Show indicators in the left margin
+  ;;   (flycheck-emacs-lisp-load-path 'inherit)
+  ;;   :preface
+
+  ;;   (defun flycheck-margin-whitespace (return)
+  ;;     (concat return
+  ;;       (propertize " " 'face '(:inherit default :underline nil
+  ;;       :stipple nil) 'display `((margin left-margin)
+  ;;       (space :width 5)))))
+  ;;   (advice-add 'flycheck-make-margin-spec
+  ;;               :filter-return #'flycheck-margin-whitespace)
+
+  ;;   ;; DISABLE FLYCHECK CONTINUATION STRINGS OVERRIDING
+  ;;   (defun my/flycheck-define-error-level (level &rest properties)
+  ;;     "Funtion Used only for override"
+  ;;     (declare (indent 1))
+  ;;     (setf (get level 'flycheck-error-level) t)
+  ;;     (setf (get level 'flycheck-error-severity)
+  ;;           (or (plist-get properties :severity) 0))
+  ;;     (setf (get level 'flycheck-compilation-level)
+  ;;           (plist-get properties :compilation-level))
+  ;;     (setf (get level 'flycheck-overlay-category)
+  ;;           (plist-get properties :overlay-category))
+  ;;     (setf (get level 'flycheck-fringe-bitmaps)
+  ;;           (let ((bitmap (plist-get properties :fringe-bitmap)))
+  ;;             (if (consp bitmap) bitmap (cons bitmap bitmap))))
+  ;;     (setf (get level 'flycheck-fringe-bitmap-double-arrow)
+  ;;           (car (get level 'flycheck-fringe-bitmaps)))
+  ;;     (setf (get level 'flycheck-fringe-face)
+  ;;           (plist-get properties :fringe-face))
+  ;;     (setf (get level 'flycheck-margin-spec)
+  ;;           (or (plist-get properties :margin-spec)
+  ;;               (flycheck-make-margin-spec
+  ;;                "" ; Change margin string in lsp diagnostics
+  ;;                (or (get level 'flycheck-fringe-face) 'default))))
+  ;;     (setf (get level 'flycheck-error-list-face)
+  ;;           (plist-get properties :error-list-face)))
+
+  ;;   (advice-add 'flycheck-define-error-level
+  ;;               :override #'my/flycheck-define-error-level)
+  ;;   :config
+  ;;   ;; Changes to some Flycheck fringes
+  ;;   (flycheck-define-error-level 'error
+  ;;     :severity 2
+  ;;     :compilation-level 2
+  ;;     :overlay-category 'flycheck-error-overlay
+  ;;     :fringe-bitmap 'exclamation-mark
+  ;;     :margin-spec (flycheck-make-margin-spec "" 'error)
+  ;;     :fringe-face 'error
+  ;;     :error-list-face 'error)
+  ;;   (flycheck-define-error-level 'warning
+  ;;     :severity 1
+  ;;     :compilation-level 1
+  ;;     :overlay-category 'flycheck-warning-overlay
+  ;;     :fringe-bitmap 'exclamation-mark
+  ;;     :margin-spec (flycheck-make-margin-spec "" 'warning)
+  ;;     :fringe-face 'warning
+  ;;     :error-list-face 'warning)
+  ;;   (flycheck-define-error-level 'info
+  ;;     :severity 0
+  ;;     :compilation-level 0
+  ;;     :overlay-category 'flycheck-info-overlay
+  ;;     :fringe-bitmap 'question-mark
+  ;;     :margin-spec (flycheck-make-margin-spec "" 'success)
+  ;;     :fringe-face 'success
+  ;;     :error-list-face 'success)
+
+  ;;   (use-package flycheck-hl-todo
+  ;;     :after flycheck
+  ;;     :defer 5
+  ;;     :hook
+  ;;     (lsp-managed-mode .
+  ;;                       (lambda ()
+  ;;                         (if (derived-mode-p 'c-mode)
+  ;;                             (setq my/flycheck-local-cache
+  ;;                                   '((lsp . ((next-checkers . (hl-todo)))))))))
+  ;;     :preface
+  ;;     ;; Add Hl-todo checker to LSP
+  ;;     (setq-local my/flycheck-local-cache nil)
+
+  ;;     (defun my/flycheck-checker-get (fn checker property)
+  ;;       (or (alist-get property (alist-get checker my/flycheck-local-cache))
+  ;;           (funcall fn checker property)))
+  ;;     ;; Modify icon
+  ;;     (defun my/flycheck-hl-todo--start (checker callback)
+  ;;       "Advice Function"
+  ;;       (funcall
+  ;;        callback 'finished
+  ;;        (mapcar (lambda (pos-msg-id)
+  ;;                  (let ((pos (nth 0 pos-msg-id))
+  ;;                        (msg (nth 1 pos-msg-id))
+  ;;                        (id  (nth 2 pos-msg-id)))
+  ;;                    (flycheck-error-new-at-pos
+  ;;                     pos 'TODO msg :id id :checker checker)))
+  ;;                (flycheck-hl-todo--occur-to-error))))
+  ;;     :config
+  ;;     (advice-add 'flycheck-checker-get :around 'my/flycheck-checker-get)
+  ;;     (advice-add 'flycheck-hl-todo--start :override 'my/flycheck-hl-todo--start)
+
+  ;;     (flycheck-define-error-level 'TODO
+  ;;       :severity 0
+  ;;       :compilation-level 0
+  ;;       :fringe-bitmap 'question-mark
+  ;;       :margin-spec (flycheck-make-margin-spec "" 'success)
+  ;;       :fringe-face 'success
+  ;;       :error-list-face 'success)
+  ;;     (flycheck-hl-todo-setup)))
+#+end_src
+
+* spell-checking.el
+
+#+begin_src elisp
+  (use-package flyspell
+    :ensure nil
+    :custom
+    (ispell-program-name "hunspell")
+    ;; (ispell-dictionary "en") ; CHOOSE YOUR LANGUAGE
+    :hook
+    ((text-mode markdown-mode org-mode) . flyspell-mode)
+    ((html-mode yaml-mode) . flyspell--mode-off)
+    ;; (prog-mode . flyspell-prog-mode)
+    :config
+    (dolist (my-list '((org-property-drawer-re)
+                       ("=" "=") ("~" "~")
+                       ("^#\\+BEGIN_SRC" . "^#\\+END_SRC")))
+      (add-to-list 'ispell-skip-region-alist my-list)))
+#+end_src
+
+* window-manegement.el
+
+#+begin_src elisp
+  ;;; DOCUMENTATION IN AN BOX
+  
+  (use-package eldoc-box
+    :if (display-graphic-p)
+    :diminish
+    :custom-face
+    (eldoc-box-border ((t (:background unspecified :inherit posframe-border))))
+    (eldoc-box-body   ((t (:inherit tooltip))))
+    :hook
+    (prog-mode . eldoc-box-hover-at-point-mode)
+    (eldoc-box-frame . (lambda (&rest _)
+                         (set-window-margins (selected-window) 0 0)))
+    :config
+    ;; Prettify `eldoc-box' frame
+    (setf (alist-get 'left-fringe eldoc-box-frame-parameters) 0
+          (alist-get 'internal-border-width eldoc-box-frame-parameters) 2
+          (alist-get 'right-fringe eldoc-box-frame-parameters) 0))
+
+  ;;; MINIBUFFER IN FRAME
+  
+  (use-package mini-frame
+    :if (display-graphic-p)
+    :unless (eq system-type 'android)
+    :custom
+    (mini-frame-mode t)
+    :config
+    ;; WARNING: PGTK BUILD IS BUGGED
+    ;; IT FOCUS TO TOOL BAR FRAME THIS MUST FIXS THIS BUG
+    (if (eq system-type 'windows-nt)
+        (dolist (params '((alpha . 85)
+                          (minibuffer-exit . t)))
+          (add-to-list 'mini-frame-show-parameters params)
+          (add-to-list 'mini-frame-completions-show-parameters params))
+
+      (setopt mini-frame-detach-on-hide nil)
+      (add-to-list 'mini-frame-show-parameters '(alpha-background . 85))
+      (fset #'select-frame-set-input-focus #'select-frame)))
+
+  (use-package which-key-posframe
+    :if (display-graphic-p)
+    :custom
+    (which-key-posframe-poshandler 'posframe-poshandler-frame-bottom-center)
+    (which-key-posframe-mode t))
+
+  ;;; DISPLAY BUFFER BELOW
+  
+  (use-package window
+    :ensure nil
+    :custom
+    ;; (kill-buffer-quit-windows t)
+    (display-buffer-alist ; TIP: YOU CAN ALSO ADD MAJOR MODE CONDITIONALS
+     `((,(rx (seq "*"
+                  (one-or-more (group (or "quickrun" "compilation"
+                                          "deadgrep" "rg" "grep")))))
+        display-buffer-in-side-window
+        (reusable-frames  . visible)
+        (window-height    . 0.40)
+        (slot . 0)
+        (side . bottom))
+       (,(rx
+          (seq "*"
+               (one-or-more
+                (group
+                 (or "Python" "lua" "Compile-Log" (seq (any "Hh") "elp")
+                     "ielm" "Occur" "Flycheck errors" "Calendar"
+                     "comment-tags" "Breakpoints" "vc-git"
+                     (seq (opt "ansi-") "term") "eat" (seq (opt "e") "shell")
+                     "Flymake diagnostics for")))))
+        display-buffer-in-side-window
+        (reusable-frames . visible)
+        (window-height   . 0.25)
+        (slot . 0)
+        (side . bottom))))
+    :preface
+    ;; Put Package Description Buffer in Right Side
+    (advice-add #'describe-package :around
+                (lambda (orig &rest r)
+                  (let ((display-buffer-alist
+                         '(("*Help*"
+                            display-buffer-in-side-window
+                            (window-width . 0.35)
+                            (side . right)))))
+                    (apply orig r)))))
+
+  ;; Soon, obsolete
+  ;; ;; Kill Buffer, don't hide it
+  ;; (advice-add #'quit-window :around
+  ;;             (lambda (orig-fn _ &rest window)
+  ;;               (funcall orig-fn 't window)))
+#+end_src
+
+* lsp.el
+#+begin_src elisp
+  (use-package eglot
+    :ensure nil
+    :hook
+    ((c-mode
+      c++-mode c-ts-base-mode ; clangd
+      python-mode python-ts-mode ; pyright
+      lua-mode lua-ts-mode ; lua-language-server
+      mhtml-mode html-ts-mode css-mode css-ts-mode ; vscode-langservers-extracted
+      js-mode js-ts-mode typescript-mode typescript-ts-mode ; typescript-lsp
+      markdown-mode markdown-ts-mode) ; vscode-markdown
+     . eglot-ensure)
+    (eglot-managed-mode
+     . (lambda ()
+         (setq-local context-menu-mode nil)))
+    :bind
+    ;; Fix mouse-3 button in eglot
+    (:map eglot-mode-map
+          ("<down-mouse-3>"
+           . (lambda (event)
+               (interactive "e")
+               (let* ((ec (event-start event))
+                      (choice (x-popup-menu event eglot-menu))
+                      (action (lookup-key eglot-menu (apply 'vector choice))))
+
+                 (select-window (posn-window ec))
+                 (goto-char (posn-point ec))
+                 (cl-labels ((check (value) (not (null value))))
+                   (when choice
+                     (call-interactively action)))))))
+    :custom-face
+    (eglot-highlight-symbol-face ((t (:inherit (lazy-highlight)))))
+    :custom
+    (eglot-autoshutdown t)
+    ;; (eglot-events-buffer-config nil)
+    (eglot-extend-to-xref nil)
+    (eglot-sync-connect nil)
+    :config
+    ;; (fset #'jsonrpc--log-event #'ignore)
+
+    (setf (alist-get '(c-mode c-ts-mode c++-mode c++-ts-mode objc-mode)
+                     eglot-server-programs nil nil #'equal)
+          '("clangd" "--clang-tidy"))
+    (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
+
+    (use-package sideline-eglot
+      :hook (eglot-managed-mode . sideline-mode)
+      :custom
+      (sideline-eglot-code-actions-prefix " ")
+      (sideline-backends-right '((sideline-eglot . up))))
+    ;; Obsolete in emacs-30
+    ;; (use-package eglot-booster
+    ;;   :after eglot
+    ;;   :vc (:url "https://github.com/jdtsmith/eglot-booster" :rev :newest)
+    ;;   :custom
+    ;;   (eglot-booster-mode t)
+    ;;   (eglot-booster-no-remote-boost t))
+    )
+
+  (use-package dape
+    :config
+    ;; Fix indent-bars stipple
+    (set-face-attribute 'dape-breakpoint-face nil :stipple nil)
+    :custom
+    ;; (dape-breakpoint-global-mode t)
+    (dape-breakpoint-margin-string
+     (propertize "●" :face 'dape-breakpoint-face))
+    (dape-repl-commands
+     '((" debug" . dape) (" next" . dape-next) (" continue" . dape-continue)
+       (" pause" . dape-pause) (" step" . dape-step-in) (" out" . dape-step-out)
+       (" restart" . dape-restart) ("󰯇 kill" . dape-kill)
+       (" disconnect" . dape-disconnect-quit) ("󰩈 quit" . dape-quit))))
+
+
+  ;;; LANGUAGE SERVER
+  
+  ;; WARNING: OUTDATED, USE AT YOUR OWN RISK
+  ;; (use-package lsp-mode
+  ;;   :disabled t
+  ;;   :custom
+  ;;   (lsp-headerline-breadcrumb-enable nil)
+  ;;   (lsp-keep-workspace-alive nil)
+  ;;   (lsp-modeline-code-action-fallback-icon "")
+  ;;   :hook
+  ;;   (((c-mode      ; clangd ⬎
+  ;;      c++-mode
+  ;;      c-ts-mode
+  ;;      c++-ts-mode
+  ;;      ;; ---
+  ;;      python-mode ; pyright
+  ;;      python-ts-mode
+  ;;      ;; ---
+  ;;      lua-mode    ; lua-language-server
+  ;;      lua-ts-mode
+  ;;      ;; ---
+  ;;      mhtml-mode  ; vscode-langservers-extracted ⬎
+  ;;      html-ts-mode
+  ;;      css-mode
+  ;;      css-ts-mode
+  ;;      ;; ---
+  ;;      js-mode     ; theia-ide lsp ⬎
+  ;;      js-ts-mode
+  ;;      typescript-mode
+  ;;      typescript-ts-mode
+  ;;      ;; ---
+  ;;      markdown-mode ; unified-language-server
+  ;;      markdown-ts-mode)
+  ;;     . lsp)
+  ;;    ;; Lsp hooks
+  ;;    (lsp-after-initialize
+  ;;     . (lambda ()
+  ;;         (local-set-key (kbd "<tool-bar> <mouse-movement>") #'ignore)
+  ;;         (local-set-key (kbd "<tab-bar> <mouse-movement>")  #'ignore)))
+  ;;    ;; (lsp-completion-mode
+  ;;    ;;  . (lambda ()
+  ;;    ;;      (if lsp-completion-mode
+  ;;    ;;          (set (make-local-variable 'company-backends)
+  ;;    ;;               (cons +lsp-company-backends
+  ;;    ;;                     (remove +lsp-company-backends
+  ;;    ;;                             (remq 'company-capf company-backends)))))))
+
+  ;;    (lsp-mode . lsp-enable-which-key-integration)
+  ;;    (lsp-mode . (lambda ()
+  ;;                  (interactive)
+  ;;                  (setq-local read-process-output-max 4194304
+  ;;                              gc-cons-threshold 100000000
+  ;;                              context-menu-mode nil))))
+  ;;   :config
+  ;;   ;; Do not Cancell ISearch at mouse movement
+  ;;   (put 'lsp-ui-doc--handle-mouse-movement 'isearch-scroll t) ; LSP
+  ;;   (put 'dap-tooltip-mouse-motion 'isearch-scroll t) ; DAP
+  ;;   (put 'handle-switch-frame 'isearch-scroll t)
+
+  ;;   ;; Display signature in a frame
+  ;;   (if (display-graphic-p)
+  ;;       ;; THEN:
+  ;;       (setopt lsp-signature-function 'lsp-signature-posframe)
+  ;;     ;; ELSE:
+  ;;     (setopt lsp-signature-function 'lsp-lv-message))
+
+  ;;   ;; LSP ICON
+  ;;   (advice-add #'lsp-icons-get-by-file-ext
+  ;;               :override #'my-lsp-icons-get-by-file-ext)
+
+  ;;   ;; LSP BOOSTER
+  ;;   ;;('REQUIRE:' https://github.com/blahgeek/emacs-lsp-booster)
+  ;;   (advice-add (if (progn (require 'json)
+  ;;                          (fboundp 'json-parse-buffer))
+  ;;                   'json-parse-buffer
+  ;;                 'json-read)
+  ;;               :around
+  ;;               #'lsp-booster--advice-json-parse)
+  ;;   (advice-add 'lsp-resolve-final-command
+  ;;               :around #'lsp-booster--advice-final-command)
+
+  ;;   (use-package sideline-lsp
+  ;;     :custom
+  ;;     (lsp-ui-sideline-enable nil)
+  ;;     (sideline-lsp-code-actions-prefix " ")
+  ;;     :config
+  ;;     (add-to-list 'sideline-backends-right '(sideline-lsp . up)))
+  ;;   :preface
+  ;;   (setopt lsp-keymap-prefix "C-c l")
+  ;;   ;; Add Yasnippet to Capf in LSP Completion
+  ;;   ;; (defvar-local +lsp-company-backends
+  ;;   ;;     (if (lsp-completion-mode)
+  ;;   ;;         '(company-paths :separate company-capf :with company-paths company-yasnippet company-files)
+  ;;   ;;       'company-capf))
+
+  ;;   ;; LSP BOOSTER FUNCTIONS
+  ;;   (defun lsp-booster--advice-json-parse (old-fn &rest args)
+  ;;     "Try to parse bytecode instead of json."
+  ;;     (or
+  ;;      (when (equal (following-char) ?#)
+  ;;        (let ((bytecode (read (current-buffer))))
+  ;;          (when (byte-code-function-p bytecode)
+  ;;            (funcall bytecode))))
+  ;;      (apply old-fn args)))
+
+  ;;   (defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+  ;;     "Prepend emacs-lsp-booster command to lsp CMD."
+  ;;     (let ((orig-result (funcall old-fn cmd test?)))
+  ;;       (if (and (not test?)
+  ;;                (not (file-remote-p default-directory))
+  ;;                lsp-use-plists
+  ;;                (not (functionp 'json-rpc-connection))
+  ;;                (executable-find "emacs-lsp-booster"))
+  ;;           (progn
+  ;;             (message "Using emacs-lsp-booster for %s!" orig-result)
+  ;;             (cons "emacs-lsp-booster" orig-result))
+  ;;         orig-result)))
+
+  ;;   (setq-local lsp-symbol-alist
+  ;;               '((misc          nerd-icons-codicon "nf-cod-symbol_namespace"   :face font-lock-warning-face)
+  ;;                 (document      nerd-icons-codicon "nf-cod-symbol_file"        :face font-lock-string-face)
+  ;;                 (namespace     nerd-icons-codicon "nf-cod-symbol_namespace"   :face font-lock-type-face)
+  ;;                 (string        nerd-icons-codicon "nf-cod-symbol_string"      :face font-lock-doc-face)
+  ;;                 (boolean-data  nerd-icons-codicon "nf-cod-symbol_boolean"     :face font-lock-builtin-face)
+  ;;                 (numeric       nerd-icons-codicon "nf-cod-symbol_numeric"     :face font-lock-builtin-face)
+  ;;                 (method        nerd-icons-codicon "nf-cod-symbol_method"      :face font-lock-function-name-face)
+  ;;                 (field         nerd-icons-codicon "nf-cod-symbol_field"       :face font-lock-variable-name-face)
+  ;;                 (localvariable nerd-icons-codicon "nf-cod-symbol_variable"    :face font-lock-variable-name-face)
+  ;;                 (class         nerd-icons-codicon "nf-cod-symbol_class"       :face font-lock-type-face)
+  ;;                 (interface     nerd-icons-codicon "nf-cod-symbol_interface"   :face font-lock-type-face)
+  ;;                 (property      nerd-icons-codicon "nf-cod-symbol_property"    :face font-lock-variable-name-face)
+  ;;                 (indexer       nerd-icons-codicon "nf-cod-symbol_enum"        :face font-lock-builtin-face)
+  ;;                 (enumerator    nerd-icons-codicon "nf-cod-symbol_enum"        :face font-lock-builtin-face)
+  ;;                 (enumitem      nerd-icons-codicon "nf-cod-symbol_enum_member" :face font-lock-builtin-face)
+  ;;                 (constant      nerd-icons-codicon "nf-cod-symbol_constant"    :face font-lock-constant-face)
+  ;;                 (structure     nerd-icons-codicon "nf-cod-symbol_structure"   :face font-lock-variable-name-face)
+  ;;                 (event         nerd-icons-codicon "nf-cod-symbol_event"       :face font-lock-warning-face)
+  ;;                 (operator      nerd-icons-codicon "nf-cod-symbol_operator"    :face font-lock-comment-delimiter-face)
+  ;;                 (template      nerd-icons-codicon "nf-cod-symbol_snippet"     :face font-lock-type-face)))
+
+  ;;   ;; Header line file icons
+  ;;   (defun my-lsp-icons-get-by-file-ext (file-ext &optional feature)
+  ;;     (if (and file-ext
+  ;;              (lsp-icons--enabled-for-feature feature))
+  ;;         (nerd-icons-icon-for-extension file-ext)))
+
+  ;;   ;; Header line symbols icon
+  ;;   ;; (defun my-lsp-icons-get-by-symbol-kind (kind &optional feature)
+  ;;   ;; (when (and kind
+  ;;   ;; (lsp-icons--enabled-for-feature feature))
+  ;;   ;; (let* ((icon (cdr (assoc (lsp-treemacs-symbol-kind->icon kind) lsp-symbol-alist)))
+  ;;   ;; (args (cdr icon)))
+  ;;   ;; (apply (car icon) args))))
+  ;;   ;; (advice-add #'lsp-icons-get-by-symbol-kind :override #'my-lsp-icons-get-by-symbol-kind)
+  ;;   )
+
+  ;;; INTEGRATE LSP PYRIGHT
+  ;; (use-package lsp-pyright :demand t)
+
+  ;;; INTEGRATE LSP UI
+  ;; (use-package lsp-ui
+  ;;   :after lsp-mode
+  ;;   :hook
+  ;;   (lsp-ui-imenu-mode
+  ;;    . (lambda () (interactive) (setq-local truncate-lines t))))
+
+  ;; `lsp-mode' and `treemacs' integration
+  ;; (use-package lsp-treemacs
+  ;;   :after lsp-mode
+  ;;   :bind (:map lsp-mode-map
+  ;;               ("C-<f8>" . lsp-treemacs-errors-list)
+  ;;               ("M-<f8>" . lsp-treemacs-symbols)
+  ;;               ("s-<f8>" . lsp-treemacs-java-deps-list))
+  ;;   :config
+  ;;   (lsp-treemacs-sync-mode t)
+
+  ;;   (with-no-warnings
+  ;;     (treemacs-create-theme "lsp-nerd-icons"
+  ;;       :config
+  ;;       (progn
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-repo" :face 'nerd-icons-blue))
+  ;;          :extensions (root))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_boolean" :face 'nerd-icons-lblue))
+  ;;          :extensions (boolean-data))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_class" :face 'nerd-icons-orange))
+  ;;          :extensions (class))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_color"))
+  ;;          :extensions (color-palette))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_constant"))
+  ;;          :extensions (constant))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_file"))
+  ;;          :extensions (document))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_misc" :face 'nerd-icons-orange))
+  ;;          :extensions (enumerator))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_enum_member" :face 'nerd-icons-lblue))
+  ;;          :extensions (enumitem))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_event" :face 'nerd-icons-orange))
+  ;;          :extensions (event))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_field" :face 'nerd-icons-lblue))
+  ;;          :extensions (field))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_misc"))
+  ;;          :extensions (indexer))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_keyword"))
+  ;;          :extensions (intellisense-keyword))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_interface" :face 'nerd-icons-lblue))
+  ;;          :extensions (interface))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_variable" :face 'nerd-icons-lblue))
+  ;;          :extensions (localvariable))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_method" :face 'nerd-icons-purple))
+  ;;          :extensions (method))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_namespace" :face 'nerd-icons-lblue))
+  ;;          :extensions (namespace))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_numeric"))
+  ;;          :extensions (numeric))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_operator"))
+  ;;          :extensions (operator))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_property"))
+  ;;          :extensions (property))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_snippet"))
+  ;;          :extensions (snippet))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_string"))
+  ;;          :extensions (string))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_structure" :face 'nerd-icons-orange))
+  ;;          :extensions (structure))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_snippet"))
+  ;;          :extensions (template))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-chevron_right" :face 'nerd-icons-dsilver))
+  ;;          :extensions (collapsed) :fallback "+")
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-chevron_down" :face 'nerd-icons-dsilver))
+  ;;          :extensions (expanded) :fallback "-")
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-file_binary" :face 'nerd-icons-dsilver))
+  ;;          :extensions (classfile))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-blue))
+  ;;          :extensions (default-folder-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-blue))
+  ;;          :extensions (default-folder))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-green))
+  ;;          :extensions (default-root-folder-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-green))
+  ;;          :extensions (default-root-folder))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-file_binary" :face 'nerd-icons-dsilver))
+  ;;          :extensions ("class"))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-file_zip" :face 'nerd-icons-dsilver))
+  ;;          :extensions (file-type-jar))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-dsilver))
+  ;;          :extensions (folder-open))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-dsilver))
+  ;;          :extensions (folder))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-orange))
+  ;;          :extensions (folder-type-component-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-orange))
+  ;;          :extensions (folder-type-component))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-green))
+  ;;          :extensions (folder-type-library-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-green))
+  ;;          :extensions (folder-type-library))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-pink))
+  ;;          :extensions (folder-type-maven-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-pink))
+  ;;          :extensions (folder-type-maven))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-orange))
+  ;;          :extensions (folder-type-package-opened))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-orange))
+  ;;          :extensions (folder-type-package))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-add" :face 'nerd-icons-dsilver))
+  ;;          :extensions (icon-create))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-list_flat" :face 'nerd-icons-dsilver))
+  ;;          :extensions (icon-flat))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-symbol_class" :face 'nerd-icons-blue))
+  ;;          :extensions (icon-hierarchical))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-link" :face 'nerd-icons-dsilver))
+  ;;          :extensions (icon-link))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-refresh" :face 'nerd-icons-dsilver))
+  ;;          :extensions (icon-refresh))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-faicon "nf-fa-unlink" :face 'nerd-icons-dsilver))
+  ;;          :extensions (icon-unlink))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-devicon "nf-dev-java" :face 'nerd-icons-orange))
+  ;;          :extensions (jar))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-library" :face 'nerd-icons-green))
+  ;;          :extensions (library))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder_opened" :face 'nerd-icons-lblue))
+  ;;          :extensions (packagefolder-open))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-folder" :face 'nerd-icons-lblue))
+  ;;          :extensions (packagefolder))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-archive" :face 'nerd-icons-dsilver))
+  ;;          :extensions (package))
+  ;;         (treemacs-create-icon
+  ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-repo" :face 'nerd-icons-blue))
+  ;;          :extensions (java-project))))))
+#+end_src
+* file-management.el
+#+begin_src elisp
+  ;; Define which file manager use
+  ;; (e.g 'treemacs' or 'dirvish-side').
+  (defalias 'my/explorer-open 'treemacs)
+  ;; dired+ (optional):
+  ;; (load (concat user-emacs-directory "config-lisp-files/" "diredp"))
+
+  ;;; DIRED CONFIGURATIONS
+  (use-package dired-x
+    :ensure nil
+    :custom
+    (dired-omit-files
+     (rx (or (seq bol (one-or-more "flycheck_"))
+             (seq bol (? ".") "#")
+             (seq bol "." eol)
+             (seq bol ".." eol)))))
+
+  ;;; DIRVISH
+  
+  (use-package dirvish
+    :hook
+    (dired-mode . centaur-tabs-local-mode)
+    (dired-mode . auto-revert-mode)
+    (dirvish-find-entry
+     . (lambda (&rest _)
+         (interactive)
+         (dired-omit-mode)
+         (setq-local truncate-lines t
+                     mouse-1-click-follows-link 'double)))
+    :custom
+    (delete-by-moving-to-trash t)
+    (dirvish-subtree-always-show-state t)
+    (dirvish-attributes
+     '(nerd-icons
+       subtree-state
+       git-msg
+       file-time
+       vc-stat))
+    (dirvish-path-separators
+     '((format "  %s " (nerd-icons-codicon "nf-cod-home"))
+       (format "  %s " (nerd-icons-codicon "nf-cod-root_folder"))
+       (format " %s " (nerd-icons-faicon "nf-fa-angle_right"))))
+    (dirvish-override-dired-mode t)
+    (dirvish-reuse-session nil)
+    (dirvish-use-mode-line nil)
+    (dired-listing-switches
+     "-l --almost-all --human-readable --group-directories-first --no-group")
+    :bind
+    (:map dirvish-mode-map
+          ("<remap> <kill-this-buffer>" . dirvish-quit)
+          ("TAB"       . dirvish-subtree-toggle)
+          ("<delete>"  . dired-do-delete)
+          ("<double-mouse-1>" . dirvish-subtree-toggle-or-open))
+    (:map dirvish-directory-view-mode-map
+          ("<remap> <kill-this-buffer>" . dirvish-quit)
+          ("<double-mouse-1>" . dired-find-file)
+          ("RET"              . dired-find-file)))
+
+  ;;; TREEMACS
+  
+  (use-package treemacs
+    :demand t
+    :hook (treemacs-mode . (lambda () (setq-local context-menu-mode nil)))
+    :bind
+    (:map treemacs-mode-map
+          ("<delete>" . treemacs-delete-file))
+    :preface
+    (defun doom-themes-enable-treemacs-variable-pitch-labels (&rest _)
+      (dolist (face '(treemacs-root-face
+                      treemacs-git-unmodified-face
+                      treemacs-git-modified-face
+                      treemacs-git-renamed-face
+                      treemacs-git-ignored-face
+                      treemacs-git-untracked-face
+                      treemacs-git-added-face
+                      treemacs-git-conflict-face
+                      treemacs-directory-face
+                      treemacs-directory-collapsed-face
+                      treemacs-file-face
+                      treemacs-tags-face))
+        (let ((faces (face-attribute face :inherit nil)))
+          (set-face-attribute
+           face nil :inherit
+           `(variable-pitch
+             ,@(delq 'unspecified (if (listp faces) faces (list faces))))))))
+    :config
+    (set-window-fringes (treemacs-get-local-window) 0 0 nil)
+    (doom-themes-enable-treemacs-variable-pitch-labels)
+    (treemacs-resize-icons 14)
+    (advice-add #'load-theme
+                :after #'doom-themes-enable-treemacs-variable-pitch-labels)
+    (use-package treemacs-nerd-icons
+      :functions treemacs-load-theme
+      :preface
+      (defun treemacs--propagate-new-icons (_theme))
+      :custom-face (cfrs-border-color ((t (:inherit posframe-border))))
+      :config (treemacs-load-theme "nerd-icons")))
+#+end_src
+
+* smart-completion.el
+#+begin_src elisp
+    ;;; ORDERLESS COMPLETION
+  
+  (use-package orderless
+    :custom
+    (completion-styles '(orderless basic)) ; Use orderless and basic completation
+    (completion-category-overrides '((file (styles basic partial-completion)))))
+
+  ;;; Corfu
+  
+  (use-package corfu
+    :ensure t
+    :bind
+    (:map corfu-map
+          ("<return>" . corfu-complete))
+    :hook
+    (prog-mode . corfu-mode)
+    (corfu-mode
+     . (lambda ()
+         "Disable Orderless for Corfu"
+         (setq-local completion-styles '(basic))))
+    (minibuffer-setup
+     . (lambda ()
+         "Enable Corfu in the minibuffer"
+         (unless (or (bound-and-true-p mct--active)
+                     (bound-and-true-p vertico--input)
+                     (eq (current-local-map) read-passwd-map))
+           (setq-local corfu-echo-delay nil
+                       corfu-popupinfo-delay nil)
+           (corfu-mode 1))))
+    :custom
+    (corfu-quit-no-match t)
+    (corfu-preselect 'first)
+    (corfu-auto t)
+    (corfu-auto-prefix 2)
+    (corfu-popupinfo-delay 0.5)
+    (corfu-preview-current t)
+    (corfu-on-exact-match nil)
+    (corfu-popupinfo-mode t)
+    (corfu-sort-override-function
+     (lambda (candidates)
+       "Yasnippet candidates first"
+       (sort candidates
+             (lambda (x y)
+               (and (< (length x) (length y) )
+                    (get-text-property 0 'yas-annotation x))))
+       candidates))
+    :config
+    (use-package nerd-icons-corfu
+      :config
+      (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)
+
+      (setf (nth 2  nerd-icons-corfu-mapping) '(class :style "md" :icon "alpha_c_circle" :face font-lock-type-face)
+            (nth 5  nerd-icons-corfu-mapping) '(constant :style "md" :icon "pi" :face font-lock-constant-face)
+            (nth 18 nerd-icons-corfu-mapping) '(method :style "md" :icon "alpha_m_circle" :face font-lock-function-name-face)
+            (nth 19 nerd-icons-corfu-mapping) '(function :style "md" :icon "function_variant" :face font-lock-function-name-face)
+            (nth 26 nerd-icons-corfu-mapping) '(snippet :style "md" :icon "xml" :face font-lock-string-face)
+            (nth 29 nerd-icons-corfu-mapping) '(text :style "md" :icon "text_recognition" :face font-lock-doc-face)
+            (nth 15 nerd-icons-corfu-mapping) '(keyword :style "cod" :icon "key" :face font-lock-keyword-face))))
+
+  ;;; Completion At Point Extensions
+  
+  (use-package cape
+    :hook
+    (prog-mode
+     . (lambda ()
+         (add-to-list 'completion-at-point-functions #'cape-file)
+         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
+    (lsp-after-initialize
+     . (lambda ()
+         (setq-local completion-at-point-functions
+                     (list
+                      (cape-capf-super
+                       #'lsp-completion-at-point
+                       #'yasnippet-capf)))
+         (add-to-list 'completion-at-point-functions #'cape-file)))
+    (lsp-completion-mode-hook
+     . (lambda ()
+         (setf (elt (cl-member 'lsp-completion-at-point completion-at-point-functions) 0)
+               (cape-capf-buster #'lsp-completion-at-point))))
+    (eglot-managed-mode
+     . (lambda ()
+         (setq-local completion-at-point-functions
+                     (list
+                      (cape-capf-super
+                       #'eglot-completion-at-point
+                       #'yasnippet-capf)))
+         (add-to-list 'completion-at-point-functions #'cape-file)))
+    :config
+    (use-package yasnippet-capf))
+
+  ;;; Company
+  ;; WARNING: OUTDATED, USE IT AT YOUR OWN RISK
+  
+  ;; (use-package company
+  ;;   :disabled
+  ;;   :demand t
+  ;;   :hook ((eshell-mode shell-mode) . (lambda () (company-mode -1)))
+  ;;   :custom
+  ;;   (company-transformers '(my/company-sort-yas-first))
+  ;;   (company-frontends ; always show candidates in overlay tooltip
+  ;;    '(company-pseudo-tooltip-frontend
+  ;;      company-preview-frontend))
+  ;;   :config
+  ;;   (advice-add 'company-yasnippet--candidates :around #'my/wrap--company-yasnippet--candidates)
+
+  ;;   ;; Delete Company Cmake
+  ;;   (setopt company-backends (delete 'company-cmake company-backends))
+
+  ;;   (use-package company-paths
+  ;;     :vc (:url "https://github.com/emacs-vs/company-paths" :rev :newest))
+
+  ;; ;;; COMPANY UI (ONLY GUI)
+  ;;   (use-package company-box
+  ;;     :if (display-graphic-p)
+  ;;     :hook (company-mode . company-box-mode)
+  ;;     :custom
+  ;;     (company-box-backends-colors nil)
+  ;;     (company-box-max-candidates 50)
+  ;;     :config
+  ;;     (add-to-list 'company-box-frame-parameters '(tab-bar-lines . 0)))
+  ;;   :preface
+  ;;   (defun my/wrap--company-yasnippet--candidates (orig-fun &rest args)
+  ;;     "Wrapper for `company-yasnippet--candidates'.
+  ;;   For some reason, the yasnippet backend also provides completion if the prefix
+  ;;   is empty.  This gives yasnippet completion everytime and makes completion
+  ;;   often a burden."
+  ;;     (if (and (stringp (car args)) (string-blank-p (car args)))
+  ;;         nil
+  ;;       (apply orig-fun args)))
+
+  ;;   (defun my/company-sort-yas-first (candidates)
+  ;;     (sort candidates
+  ;;           (lambda (c1 _c2)
+  ;;             (equal (get-text-property 0 'company-backend c1) 'company-yasnippet)))
+  ;;     candidates))
+#+end_src
+
+* mode-line.el
+#+begin_src elisp
+  ;; Minor Config in Modeline
+  (use-package minions
+    :hook (doom-modeline-mode . minions-mode))
+
+  (use-package hide-mode-line
+    :hook (((treemacs-mode
+             eshell-mode shell-mode term-mode vterm-mode
+             embark-collect-mode lsp-ui-imenu-mode woman-mode-hook
+             dap-ui-breakpoints-ui-list-mode
+             flymake-diagnostics-buffer-mode
+             flymake-project-diagnostics-mode
+             emacs-lisp-compilation-mode flycheck-error-list-mode
+             dashboard-mode Custom-mode pdf-annot-list-mode)
+            . hide-mode-line-mode)))
+
+  ;;; DOOM MODELINE
+  
+  (use-package doom-modeline
+    :hook (after-init . doom-modeline-mode)
+    :custom
+    (doom-modeline-buffer-state-icon t)
+    (doom-modeline-check-simple-format nil)
+    (doom-modeline-minor-modes t)
+    (doom-modeline-lsp t)
+    :config
+    ;; Configure Some Modeline
+    (doom-modeline-def-modeline 'main
+      '(bar matches workspace-name window-number follow modals
+            buffer-info remote-host " " check lsp debug parrot " "
+            compilation process misc-info)
+      '(vcs media-info indent-info input-method buffer-encoding
+            buffer-position word-count pdf-pages major-mode
+            minor-modes))
+    (doom-modeline-set-modeline 'main t)
+
+    (doom-modeline-def-modeline 'package
+      '(bar package " " process)
+      '(misc-info major-mode))
+
+    (add-to-list 'doom-modeline-mode-alist '(dashboard-mode)))
+#+end_src
+
+* custom-themes.el
+#+begin_src elisp
+    ;;; SOLAIRE DISTINGUISH "REAL" BUFFERS FROM "UNREAL" BUFFERS
+  
+  (use-package solaire-mode
+    :if (display-graphic-p)
+    :config
+    (add-to-list 'solaire-mode-themes-to-face-swap 'doom-vibrant)
+
+    (add-to-list #'solaire-mode-remap-alist
+                 '(treemacs-hl-line-face . solaire-hl-line-face))
+    (add-to-list #'solaire-mode-remap-alist
+                 '(treemacs-window-background-face . solaire-default-face))
+
+    ;; Disable Solaire Modeline
+    (dolist (face '(mode-line mode-line-inactive))
+      (setf (alist-get face solaire-mode-remap-alist) nil))
+    (solaire-global-mode t))
+
+  ;;; INSTALL THEMES
+  
+  ;; (use-package catppuccin-theme
+  ;;     :config
+  ;;     (catppuccin-reload)
+  ;;     ;; Flash ModeLine at errors
+  ;;     (use-package mode-line-bell
+  ;;         :config (mode-line-bell-mode t)))
+
+  (use-package doom-themes
+    :config
+    (load-theme 'doom-dark+)
+    ;; Enable flashing mode-line on errors
+    (doom-themes-visual-bell-config)
+    ;; Corrects (and improves) org-mode's native fontification.
+    (doom-themes-org-config))
+#+end_src
+
+* dashboard.el
+#+begin_src elisp
+  (use-package dashboard
+    :hook
+    (window-configuration-change
+     . (lambda ()
+         "Quit treemacs window when in dashboard"
+         (if (and (windowp (treemacs-get-local-window)) (derived-mode-p 'dashboard-mode))
+             (delete-window (treemacs-get-local-window)))))
+    (after-init . dashboard-setup-startup-hook)
+    (dashboard-before-initialize . turn-on-solaire-mode)
+    (dashboard-mode .
+                    (lambda ()
+                      (setq-local left-fringe-width 0
+                                  right-fringe-width 0
+                                  left-margin-width 0
+                                  right-margin-width 0)
+                      (widget-forward 1)))
+    :bind
+    (:map dashboard-mode-map
+          ("<f5>" . dashboard-open)
+          ("<remap> <dashboard-previous-line>" . widget-backward)
+          ("<remap> <dashboard-next-line>" . widget-forward)
+          ("<remap> <previous-line>" . widget-backward)
+          ("<remap> <next-line>"  . widget-forward)
+          ("<remap> <right-char>" . widget-forward)
+          ("<remap> <left-char>"  . widget-backward))
+
+    :custom-face
+    (dashboard-banner-logo-title ((t (:height 2.0 :weight ultra-heavy :inherit (variable-pitch)))))
+    :custom
+    (dashboard-banner-logo-title "GNU Emacs")
+    (dashboard-startup-banner
+     `(,(concat user-emacs-directory "assets/splash.svg") .
+       ,(concat dashboard-banners-directory "4.txt")))
+    (dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
+    (dashboard-vertically-center-content t)
+    (dashboard-display-icons-p t) ; display icons on both GUI and terminal
+    (dashboard-path-style 'truncate-middle)
+    (dashboard-path-max-length 50)
+    (dashboard-center-content t)
+    (dashboard-items '((projects . 7)
+                       (recents  . 9)))
+    (dashboard-set-file-icons t)
+    (dashboard-set-heading-icons t)
+    (dashboard-heading-icons '((recents   . "nf-oct-history")
+                               (bookmarks . "nf-oct-bookmark")
+                               (agenda    . "nf-oct-calendar")
+                               (projects  . "nf-oct-rocket")
+                               (registers . "nf-oct-database")))
+    (dashboard-footer-icon `(,(nerd-icons-faicon "nf-fa-pencil" :height 1.2 :face 'nerd-icons-yellow)
+                             ,(nerd-icons-faicon "nf-fa-hand_peace_o" :height 1.2 :face 'nerd-icons-green)))
+    (dashboard-heading-shorcut-format (propertize " [%s]" 'face 'shadow))
+    (dashboard-startupify-list `(dashboard-insert-banner
+                                 dashboard-insert-banner-title
+                                 dashboard-insert-init-info
+                                 ,(dashboard-insert-newline 2)
+                                 dashboard-insert-footer
+                                 (lambda () (delete-char -1))
+                                 dashboard-insert-items
+                                 dashboard-insert-navigator
+                                 dashboard-insert-newline))
+
+    (dashboard-navigator-buttons
+     (let ((l (nerd-icons-powerline "nf-ple-left_half_circle_thick" :face 'dashboard-navigator :height 1.5))
+           (r (nerd-icons-powerline "nf-ple-right_half_circle_thick" :face 'dashboard-navigator :height 1.5)))
+       `((;; line1
+          (,(nerd-icons-faicon "nf-fa-file_text_o")
+           "Open File"               ; Title
+           "Open External File"     ; Description
+           (lambda (&rest _) (menu-find-file-existing))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          (,(nerd-icons-octicon "nf-oct-rocket")
+           " Projects"       ; Title
+           "Open Project or Discover News one "   ; Description
+           (lambda (&rest _) (if project--list
+                                 (call-interactively #'project-switch-project)
+                               (call-interactively #'project-remember-projects-under)))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          (,(nerd-icons-mdicon "nf-md-timelapse")
+           " Recent files"       ; Title
+           "Open Recently files"   ; Description
+           (lambda (&rest _) (consult-recent-file))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          (,(nerd-icons-octicon "nf-oct-code_square")
+           " Edit init file"     ; Title
+           "Open and Edit Emacs init file"   ; Description
+           (lambda (&rest _) (find-file user-init-file))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          )
+         ;; line 2
+         (
+          (,(nerd-icons-mdicon "nf-md-package_variant")
+           "Search Packages"                    ; Title
+           "Search and install Emacs Packages"   ; Description
+           (lambda (&rest _) (list-packages))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          (,(nerd-icons-octicon "nf-oct-gear")
+           " "               ; Title
+           "Open settings"   ; Description
+           (lambda (&rest _) (customize))
+           (:inverse-video t :inherit dashboard-navigator)
+           ,l
+           ,r)
+          )))))
+#+end_src
+
+* org-mode.el
+#+begin_src elisp
+    ;;; ORG MODERN
+  
+  (use-package org
+    :ensure nil
+    :hook
+    (org-agenda-finalize . org-modern-agenda)
+    :custom
+    ;; BEAUTIFYING ORG MODE
+    (org-startup-indented t)
+    (org-auto-align-tags nil)
+    (org-tags-column     0)
+    (org-fold-catch-invisible-edits 'show-and-error)
+    (org-special-ctrl-a/e t)
+    (org-insert-heading-respect-content t)
+
+    ;; Org styling
+    (org-ellipsis        "…")
+
+    ;; Agenda styling
+    (org-agenda-tags-column     0)
+    (org-agenda-block-separator ?─)
+    (org-agenda-time-grid '((daily today require-timed)
+                            (800 1000 1200 1400 1600 1800 2000)
+                            " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄"))
+    (org-agenda-current-time-string
+     "⭠ now ─────────────────────────────────────────────────")
+    :config
+    ;; Enable Other Org Features
+    (require 'org-element)
+    (require 'org-mouse)
+
+    ;;; Faces
+    (set-face-attribute 'org-document-info nil :height 1.2)
+    (set-face-attribute 'org-document-title nil :height 1.4)
+    (set-face-attribute 'org-level-1 nil :extend nil :weight 'bold :height 1.3)
+    (set-face-attribute 'org-level-2 nil :extend nil :weight 'normal :height 1.2)
+    (set-face-attribute 'org-level-3 nil :extend nil :height 1.15)
+
+    (use-package org-modern
+      :custom
+      (org-modern-star
+       '(" " "󰎥 " "󰎨 " "󰎫" "󰎲 " "󰎯 " "󰎴 " "󰎷 " "󰎺 " "󰎽 " "󰏀 "))
+      (global-org-modern-mode t)))
+#+end_src
+
+* windows-tabs.el
+#+begin_src elisp
+  (use-package centaur-tabs
+    :load-path "~/Escritorio/projectos/centaur-tabs/"
+    :hook (emacs-startup . centaur-tabs-mode)
+    :custom
+    (centaur-tabs-cycle-scope 'tabs)
+    (centaur-tabs-icon-type 'nerd-icons)
+    (centaur-tabs-enable-key-bindings t) ; Enable Centaur Tabs Key bindings
+    (centaur-tabs-set-bar 'under)        ; Tab line
+    (x-underline-at-descent-line t)
+    (centaur-tabs-set-modified-marker t)
+    (centaur-tabs-modified-marker "●")
+    (centaur-tabs-show-navigation-buttons t) ; Navigations Buttons
+    (centaur-tabs-forward-tab-text " ⏵ ")
+    (centaur-tabs-backward-tab-text " ⏴ ")
+    (centaur-tabs-down-tab-text " ▾ ")
+    (centaur-tabs-set-icons t) ; Icons
+    (centaur-tabs-gray-out-icons 'buffer)
+    :config
+    (if (eq system-type 'android)
+        (centaur-tabs-change-fonts "Inconsolata Nerd Font" 150)
+      (centaur-tabs-change-fonts "Inconsolata Nerd Font" 98))
+
+    (dolist (names '("*Backtrace*" "*Native-compile-Log" "*cpp"
+                     "*Completions" "*Ilist" "*dap" "*copilot"
+                     "*EGLOT" "*Debug" "*gud-" "*locals of" "*stack frames"
+                     "*input/output of" "*breakpoints of " "*threads of "
+                     "*local values of " "*css-ls" "*html-ls" "*json-ls" "*ts-ls"
+                     "*dashboard" "*format-all-" "*marksman" "Treemacs"
+                     "*Dirvish-preview-" "*yasnippet" "*clang" "*mybuf"
+                     "*Messages" "*py" "*rg" "*lua-" "*comment-tags" "*Flymake log"
+                     "dir-data-" "*Async-native" "*zone"
+                     "widget-choose"))
+      (add-to-list 'centaur-tabs-excluded-prefixes names))
+
+    (defun centaur-tabs-buffer-groups ()
+      (list
+       (cond
+        ((memq major-mode '(magit-process-mode
+                            magit-status-mode
+                            magit-diff-mode
+                            magit-log-mode
+                            magit-file-mode
+                            magit-blob-mode
+                            magit-blame-mode))
+         "Magit")
+
+        ((string-prefix-p "*vc-" (buffer-name))
+         "VC")
+
+        ((derived-mode-p 'Custom-mode)
+         "Custom")
+        ((derived-mode-p 'dired-mode)
+         "Dired")
+
+        ((memq major-mode '(helpful-mode
+                            help-mode
+                            Info-mode))
+         "Help")
+
+        ((memq major-mode '(flycheck-error-list-mode
+                            flymake-diagnostics-buffer-mode
+                            flymake-project-diagnostics-mode
+                            compilation-mode comint-mode eshell-mode shell-mode eat-mode
+                            term-mode quickrun--mode dap-ui-breakpoints-ui-list-mode
+                            inferior-python-mode calendar-mode
+                            inferior-emacs-lisp-mode grep-mode occur-mode))
+         "Side Bar")
+
+        ((cl-dolist (prefix centaur-tabs-excluded-prefixes)
+           (when (string-prefix-p prefix (buffer-name))
+             (cl-return ""))))
+
+        ((when-let* ((project-name (centaur-tabs-project-name)))
+           project-name))
+
+        (t (centaur-tabs-get-group-name (current-buffer))))))
+
+    (defun centaur-tabs-hide-tab (x)
+      "Do no to show buffer X in tabs."
+      (let ((name (format "%s" x)))
+        (or
+         (if-let* ((w (window-dedicated-p (selected-window))))
+             (not (eq w 'side)))
+         ;; Buffer name not match below blacklist.
+         (cl-dolist (prefix centaur-tabs-excluded-prefixes)
+           (when (string-prefix-p prefix name)
+             (cl-return t)))
+
+         ;; Is not magit buffer.
+         (and (string-prefix-p "magit" name)
+              (not (file-name-extension name))))))
+
+    (defun run-after-load-theme-hook (&rest _)
+      (centaur-tabs-buffer-init)
+      (centaur-tabs-display-update)
+      (centaur-tabs-headline-match))
+    (advice-add #'load-theme :after #'run-after-load-theme-hook))
+#+end_src
+
+* code-snippets.el
+#+begin_src elisp
+  (use-package yasnippet
+    :diminish yas-minor-mode
+    :hook (after-init . yas-global-mode)
+    :init
+    ;; Collection of snippets
+    (use-package yasnippet-snippets
+      :after yasnippet))
+#+end_src
+
+* auto-insert-templates.el
+#+begin_src elisp
+  ;; Enable Auto-insert mode for File Templates
+  (use-package autoinsert
+    :ensure nil
+    :custom
+    (auto-insert-mode t)
+    (auto-insert 'other)
+    (auto-insert-query nil)
+    (auto-insert-directory (concat user-emacs-directory "templates/"))
+    :preface
+    (defun my-autoinsert-yas-expand()
+      "Replace text in yasnippet template."
+      (yas-expand-snippet (buffer-string) (point-min) (point-max)))
+    :config
+    ;; YOU CAN DEFINE YOUR OWN TEMPLATES IN THIS WAY:
+    ;; (define-auto-insert "compile_flags.txt"
+    ;; ["compile_flags-auto-insert" my-autoinsert-yas-expand])
+    )
+#+end_src
+
+* ligatures.el
+#+begin_src elisp
+
+  (use-package ligature
+    :if (display-graphic-p)
+    :config
+    (ligature-set-ligatures 't '("www"))
+    (ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
+    (ligature-set-ligatures
+     'prog-mode
+     '("|||>" "<|||" "<==>" "<!--" "####" "~~>" "***" "||=" "||>"
+       ":::" "::=" "=:=" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
+       "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "---" "-<<"
+       "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
+       "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
+       "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
+       "~>" "~-" "**" "*>" "*/" "||" "|}" "|]" "|=" "|>" "|-" "{|"
+       "[|" "]#" "::" ":=" ":>" ":<" "$>" "==" "=>" "!=" "!!" ">:"
+       ">=" ">>" ">-" "-~" "-|" "->" "--" "-<" "<~" "<*" "<|" "<:"
+       "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
+       "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
+       "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
+       "\\\\" "://" "========="))
+    (global-ligature-mode t))
+
+  
+  (provide 'ligatures-config)
+#+end_src
