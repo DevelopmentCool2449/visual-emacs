@@ -2,7 +2,7 @@
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
-#+html: <img src="./assets/splash.svg" align="left" width="30%">
+#+html: <img src="./assets/splash.svg" align="left" width="20%">
 
 [[./assets/READ_images/screenshot.png]]
 
@@ -14,8 +14,6 @@ init.el all the time or want to show off, this is your
 configuration.
 
 #+html: <img src="./assets/README_images/wtf.jpg" align="right" width="25%">
-
-
 
 *Note: this configuration It's intended to copy and paste*
 *the code you like into your own setup, whether it's Doom,*
