@@ -1836,7 +1836,6 @@ The same goes for this:
       (setopt mini-frame-detach-on-hide nil)
       ;; (add-to-list 'mini-frame-show-parameters '(alpha-background . 85))
       (fset #'select-frame-set-input-focus #'select-frame))
-    :init
     (mini-frame-mode t))
 
   (use-package which-key-posframe
@@ -2685,13 +2684,12 @@ The same goes for this:
              (delete-window (treemacs-get-local-window)))))
     (after-init . dashboard-setup-startup-hook)
     (dashboard-before-initialize . turn-on-solaire-mode)
-    (dashboard-mode .
-                    (lambda ()
-                      (setq-local left-fringe-width 0
-                                  right-fringe-width 0
-                                  left-margin-width 0
-                                  right-margin-width 0)
-                      (widget-forward 1)))
+    (dashboard-mode . (lambda ()
+                        (setq-local left-fringe-width 0
+                                    right-fringe-width 0
+                                    left-margin-width 0
+                                    right-margin-width 0)
+                        (widget-forward 1)))
     :bind
     (:map dashboard-mode-map
           ("<f5>" . dashboard-open)
@@ -2705,7 +2703,10 @@ The same goes for this:
     :custom-face
     (dashboard-banner-logo-title ((t (:height 2.0 :weight ultra-heavy :inherit (variable-pitch)))))
     :custom
-    (dashboard-banner-logo-title "GNU Emacs")
+    (dashboard-banner-logo-title "Visual Emacs Studio Code+\n      (Community Edition)")
+    (dashboard-footer-messages '("Free Edition, Get the Enterprise Edition for $999"
+                                 "Copyright God (c) 0-2025"
+                                 "Get the \"Neo Modern vIDEm+ (Profesional)\""))
     (dashboard-startup-banner
      `(,(concat user-emacs-directory "assets/splash.svg") .
        ,(concat dashboard-banners-directory "4.txt")))
