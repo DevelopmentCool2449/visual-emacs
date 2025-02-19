@@ -9,6 +9,7 @@ transient/
 tree-sitter/
 
 # files
+README.el
 *#
 *.el~
 history

@@ -4,7 +4,7 @@
 
 [[./assets/splash.svg]]
 
-#+html: <img src="./assets/README_images/Unsettled-Tom.jpg" align="right" width="10%">
+#+html: <img src="./assets/README_images/Unsettled-Tom.jpg" align="right" width="25%">
 
 What's this?, why does this exists?
 If you came from VsCode, Eclipse, VisualStudio or Notepad
@@ -22,11 +22,11 @@ configuration.
 
 ** Requirements
 - an folder named "assets" in your
-  `user-emacs-directory' path where your
+  =user-emacs-directory= path where your
   images, icons must live.
 
 - an folder named "templates" in your
-  `user-emacs-directory' path
+  =user-emacs-directory= path
 
 - a nerd-font installed /(This configuration uses
   Inconsolata, you can change it to the one you prefer.)/
@@ -35,8 +35,7 @@ configuration.
 
 - a config file to where paste these snippets (optional)
 
-* Elisp code:
-Firsts lines (init.el):
+* Firsts lines (init.el)
 
 NOTE: This setting can fit as an org file or as multiple
 separate files (manually), either you can choose which one
@@ -141,7 +140,7 @@ directory called "config-lisp-files" in emacs config path.
   ;; (savehist-mode t))
 #+end_src
 
-* packages.el
+* Package Configuration (packages.el)
 
 #+begin_src elisp
   (use-package package
@@ -195,8 +194,7 @@ directory called "config-lisp-files" in emacs config path.
     )
 #+end_src
 
-* internal-configurations.el
-Some Tweaks into internal options.
+* Some Tweaks into internal options (internal-configurations.el)
 
 #+begin_src elisp
   (use-package emacs
@@ -206,13 +204,33 @@ Some Tweaks into internal options.
      . visual-wrap-prefix-mode)
     ((prog-mode text-mode conf-mode) . display-line-numbers-mode)
     :custom
+    (undo-limit 80000000) ;; ⚠️👀
+    (safe-local-variable-values
+     '((eval remove-hook 'flymake-diagnostic-functions
+             'elisp-flymake-checkdoc t)))
+
+    (x-gtk-show-hidden-files t)
+    (mouse-drag-and-drop-region t)
+    (mouse-drag-and-drop-region-cross-program t)
+
+    (show-paren-predicate
+     '(not
+       (or (derived-mode . special-mode) (major-mode . text-mode)
+           (derived-mode . hexl-mode))))
+    (show-paren-style 'parenthesis)
+    (show-paren-when-point-inside-paren t)
+
+    (delete-selection-mode t)
+    (cursor-type 'bar)
     (context-menu-mode t)
+
+    (truncate-lines t)
     ;; Exit message
     (confirm-kill-emacs nil)
     ;; No Undo Redos
     (undo-no-redo t)
 
-  ;;; IMAGE
+    ;;; IMAGE
     (image-animate-loop t)
 
     ;; Only text-mode on new buffers
@@ -242,11 +260,6 @@ Some Tweaks into internal options.
                     (insert text)
                     (call-process-region (point-min) (point-max) "win32yank.exe" nil 0 nil "-i" "--crlf")))))
 
-    ;;; Faces
-    (set-face-attribute 'custom-group-tag nil :height 1.2)
-    (set-face-attribute 'region nil :extend nil)
-    (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
-
     ;; Alias
     (defalias 'yes-or-no-p 'y-or-n-p)
     ;; y-or-n-p with return
@@ -271,7 +284,6 @@ Some Tweaks into internal options.
     (unless (eq system-type 'windows-nt)
       (set-selection-coding-system 'utf-8))
 
-    :preface
     ;; Enable line numbers and pairs if buffer/file is writable
     (advice-add #'fundamental-mode :after (lambda (&rest _)
                                             (unless buffer-read-only
@@ -288,6 +300,7 @@ Some Tweaks into internal options.
     (put 'capitalize-region 'disabled nil)
 
     ;; Continue Comments.
+    (setopt comment-multi-line t)
     (advice-add 'newline-and-indent :before-until
                 (lambda (&rest _)
                   (interactive "*")
@@ -298,84 +311,93 @@ Some Tweaks into internal options.
                     t))))
 #+end_src
 
-* key-mappings.el
+* Polemic Key Bindings 👀 (key-mappings.el)
 
 #+begin_src elisp
-  ;; ╭─────────────────────────────────────────────────────────────────────────────────╮
-  ;; │             C    means (press and hold) the 'Control' key                       │
-  ;; │             M    means the Meta key (the 'Alt' key, on most keyboards)          │
-  ;; │             S    means the 'Shift' key (e.g. S─TAB means Shift Tab)             │
-  ;; │             DEL  means the 'Backspace' key (not the Delete key)                 │
-  ;; │             RET  means the 'Return' or 'Enter' key                              │
-  ;; │             SPC  means the 'Space' bar                                          │
-  ;; │             ESC  means the 'Escape'key                                          │
-  ;; │             TAB  means the 'Tab' key                                            │
-  ;; └─────────────────────────────────────────────────────────────────────────────────╯
+     ;; ╭─────────────────────────────────────────────────────────────────────────────────╮
+     ;; │             C    means (press and hold) the 'Control' key                       │
+     ;; │             M    means the Meta key (the 'Alt' key, on most keyboards)          │
+     ;; │             S    means the 'Shift' key (e.g. S─TAB means Shift Tab)             │
+     ;; │             DEL  means the 'Backspace' key (not the Delete key)                 │
+     ;; │             RET  means the 'Return' or 'Enter' key                              │
+     ;; │             SPC  means the 'Space' bar                                          │
+     ;; │             ESC  means the 'Escape'key                                          │
+     ;; │             TAB  means the 'Tab' key                                            │
+     ;; └─────────────────────────────────────────────────────────────────────────────────╯
 
-      ;;; WHICH KEY
-  (use-package which-key :ensure t :diminish)
+          ;;; WHICH KEY
+     (use-package which-key
+       :ensure t ; THIS LINE CAN BE DELETED IN EMACS-30
+       :diminish
+       :custom
+       (which-key-add-column-padding 2)
+       (which-key-allow-multiple-replacements t)
+       (which-key-idle-delay 0.8)
+       (which-key-min-display-lines 6)
+       (which-key-mode t)
+       (which-key-side-window-slot -10))
 
-      ;;; WAKIB KEYS ()
-  ;;   (use-package wakib-keys :diminish
-  ;;     :config
-  ;;       (keymap-set-after (current-global-map) "<menu-bar> <options> <wakib>"
-  ;;         '(menu-item "Wakib Keys Mode" wakib-keys
-  ;;                     :help "Enable Wakib Keys (this rebind C-x/C-c to C-e/C-d)"
-  ;;                     :button (:toggle and (default-boundp 'wakib-keys)
-  ;;                                      (default-value 'wakib-keys)))
-  ;;         'cua-mode))
+          ;;; WAKIB KEYS ()
+     ;;   (use-package wakib-keys :diminish
+     ;;     :config
+     ;;       (keymap-set-after (current-global-map) "<menu-bar> <options> <wakib>"
+     ;;         '(menu-item "Wakib Keys Mode" wakib-keys
+     ;;                     :help "Enable Wakib Keys (this rebind C-x/C-c to C-e/C-d)"
+     ;;                     :button (:toggle and (default-boundp 'wakib-keys)
+     ;;                                      (default-value 'wakib-keys)))
+     ;;         'cua-mode))
 
-  ;; ;;; MULTI-CURSORS
-  (use-package multiple-cursors
-    :config
-    (add-to-list 'mc/unsupported-minor-modes 'cua-mode)
-    :custom
-    (mc/always-run-for-all t))
+     ;; ;;; MULTI-CURSORS
+     (use-package multiple-cursors
+       :config
+       (add-to-list 'mc/unsupported-minor-modes 'cua-mode)
+       :custom
+       (mc/always-run-for-all t))
 
-  ;; (use-package hungry-delete
-  ;;   :config
-  ;;   (global-hungry-delete-mode t))
+     ;; (use-package hungry-delete
+     ;;   :config
+     ;;   (global-hungry-delete-mode t))
 
-      ;;; OVERRIDE FUNCTIONS
-
-  ;; (defun my/call-interactively-inhibit-kill-ring (fun &rest args)
-  ;; (if (interactive-p)
-  ;; (let ((kill-ring '(""))
-  ;; (select-enable-clipboard nil))
-  ;; (call-interactively fun))
-  ;; (apply fun args)))
+          ;;; OVERRIDE FUNCTIONS
+     
+     ;; (defun my/call-interactively-inhibit-kill-ring (fun &rest args)
+     ;; (if (interactive-p)
+     ;; (let ((kill-ring '(""))
+     ;; (select-enable-clipboard nil))
+     ;; (call-interactively fun))
+     ;; (apply fun args)))
 
-  ;; (advice-add 'kill-word          :around #'my/call-interactively-inhibit-kill-ring)
-  ;; (advice-add 'kill-whole-line    :around #'my/call-interactively-inhibit-kill-ring)
-  ;; (advice-add 'backward-kill-word :around #'my/call-interactively-inhibit-kill-ring)
+     ;; (advice-add 'kill-word          :around #'my/call-interactively-inhibit-kill-ring)
+     ;; (advice-add 'kill-whole-line    :around #'my/call-interactively-inhibit-kill-ring)
+     ;; (advice-add 'backward-kill-word :around #'my/call-interactively-inhibit-kill-ring)
 
-  ;; Key movements functions
-  ;;  (defun my/backward-paragraph (&optional n)
-  ;;    (interactive "^p")
-  ;;    (let ((n (if (null n) 1 n)))
-  ;;      (re-search-backward "\\(^\\s-*$\\)\n" nil "NOERROR" n)))
-  ;;  (advice-add #'backward-paragraph :override #'my/backward-paragraph)
+     ;; Key movements functions
+     ;;  (defun my/backward-paragraph (&optional n)
+     ;;    (interactive "^p")
+     ;;    (let ((n (if (null n) 1 n)))
+     ;;      (re-search-backward "\\(^\\s-*$\\)\n" nil "NOERROR" n)))
+     ;;  (advice-add #'backward-paragraph :override #'my/backward-paragraph)
 
-  ;;  (defun my/forward-paragraph (&optional n)
-  ;;    (interactive "^p")
-  ;;    (let ((n (if (null n) 1 n)))
-  ;;      (re-search-forward "\n\\(^\\s-*$\\)" nil "NOERROR" n)))
-  ;;  (advice-add #'forward-paragraph :override #'my/forward-paragraph)
+     ;;  (defun my/forward-paragraph (&optional n)
+     ;;    (interactive "^p")
+     ;;    (let ((n (if (null n) 1 n)))
+     ;;      (re-search-forward "\n\\(^\\s-*$\\)" nil "NOERROR" n)))
+     ;;  (advice-add #'forward-paragraph :override #'my/forward-paragraph)
 
-  ;;  (defun beginning-of-line-or-indentation ()
-  ;;    (interactive "^")
-  ;;    (if (= (save-excursion (back-to-indentation) (point)) (point))
-  ;;        (beginning-of-line)
-  ;;      (back-to-indentation)))
+     ;;  (defun beginning-of-line-or-indentation ()
+     ;;    (interactive "^")
+     ;;    (if (= (save-excursion (back-to-indentation) (point)) (point))
+     ;;        (beginning-of-line)
+     ;;      (back-to-indentation)))
 
-  ;; Use bind-key to set your bindings
-  ;; (bind-keys :map your-mode-map
-  ;; ("<key>" . action))
+     ;; Use bind-key to set your bindings
+     ;; (bind-keys :map your-mode-map
+     ;; ("<key>" . action))
 
-  ;; (bind-key "C-y" 'undo-redo cua-global-keymap)
+     ;; (bind-key "C-y" 'undo-redo cua-global-keymap)
 #+end_src
 
-* syntax-highlighting.el
+* Any kind of highlighting (syntax-highlighting.el)
 
 #+begin_src elisp
   (use-package hl-line
@@ -398,140 +420,141 @@ Some Tweaks into internal options.
   ;;          . highlight-thing-mode))
 
   ;;; EXTRA LANGUAGES SYNTAX
-
-  (use-package lua-mode)
-  (use-package markdown-mode)
-  (use-package yaml-mode
-    :mode
-    "\\.clang-format\\'"
-    "\\.clang-tidy\\'"
-    "\\.clangd\\'")
+  
+    (use-package lua-mode)
+    (use-package markdown-mode)
+    (use-package yaml-mode
+      :mode
+      "\\.clang-format\\'"
+      "\\.clang-tidy\\'"
+      "\\.clangd\\'")
 
-  ;;; IMPROVE SYNTAX HIGHLIGHTING
-
-  (use-package treesit-auto
-    :config
-    (global-treesit-auto-mode))
+    ;;; IMPROVE SYNTAX HIGHLIGHTING
+  
+    (use-package treesit-auto
+      :config
+      (global-treesit-auto-mode))
 
-  ;;; FOLDING USING TREE SITTER
-  (use-package treesit-fold
-    :unless (eq system-type 'android) ; Doesn't work in android
-    :hook
-    (emacs-lisp-mode . (lambda () (my/treesit-parser-for-lang-mode 'elisp)))
-    (xml-mode . (lambda () (my/treesit-parser-for-lang-mode 'xml)))
-    :config
-    (global-treesit-fold-mode t)
+    ;;; FOLDING USING TREE SITTER
+    (use-package treesit-fold
+      :unless (eq system-type 'android) ; Doesn't work in android
+      :hook
+      (emacs-lisp-mode . (lambda () (my/treesit-parser-for-lang-mode 'elisp)))
+      (xml-mode . (lambda () (my/treesit-parser-for-lang-mode 'xml)))
+      :config
+      (global-treesit-fold-mode t)
 
-    (defun my/treesit-parser-for-lang-mode (lang-mode-symbol)
-      (when (and (treesit-available-p)
-                 (treesit-language-available-p lang-mode-symbol))
-        (treesit-parser-create lang-mode-symbol))))
+      (defun my/treesit-parser-for-lang-mode (lang-mode-symbol)
+        (when (and (treesit-available-p)
+                   (treesit-language-available-p lang-mode-symbol))
+          (treesit-parser-create lang-mode-symbol))))
 
 
-  (use-package treesit-fold-indicators :ensure nil
-    :unless (eq system-type 'android)
-    :if (display-graphic-p)
-    ;; :custom
-    ;; (treesit-fold-indicators-priority 50)
-    :config
-    (global-treesit-fold-indicators-mode t)
-    ;; Menu for Treesit-Fold
-    (easy-menu-add-item nil '("tools")
-                        '("Tree Sitter"
-                          ["Toggle TS-Fold" treesit-fold-mode t]
-                          ["Toggle Ts-Fold Indicator" treesit-fold-indicators-mode t])))
+    (use-package treesit-fold-indicators :ensure nil
+      :unless (eq system-type 'android)
+      :if (display-graphic-p)
+      ;; :custom
+      ;; (treesit-fold-indicators-priority 50)
+      :config
+      (global-treesit-fold-indicators-mode t)
+      ;; Menu for Treesit-Fold
+      (easy-menu-add-item nil '("tools")
+                          '("Tree Sitter"
+                            ["Toggle TS-Fold" treesit-fold-mode t]
+                            ["Toggle Ts-Fold Indicator" treesit-fold-indicators-mode t])))
 
-  ;;; OTHERS HIGHLIGHTING
-
-  ;; Braket colorizer
-  (use-package rainbow-delimiters
-    :demand t
-    :hook ((prog-mode yaml-mode xml-mode mhtml-mode)
-           . rainbow-delimiters-mode))
+    ;;; OTHERS HIGHLIGHTING
+  
+    ;; Braket colorizer
+    (use-package rainbow-delimiters
+      :demand t
+      :custom (rainbow-delimiters-max-face-count 4)
+      :hook ((prog-mode yaml-mode xml-mode mhtml-mode)
+             . rainbow-delimiters-mode))
 
-  ;; Colorful-mode preview and change color in-real-time
-  (use-package colorful-mode
-    :diminish
-    :custom
-    (colorful-use-prefix t)
-    (colorful-only-strings 'only-prog)
-    (css-fontify-colors nil)
-    :config
-    (global-colorful-mode t)
-    (add-to-list 'global-colorful-modes 'helpful-mode))
+    ;; Colorful-mode preview and change color in-real-time
+    (use-package colorful-mode
+      :diminish
+      :custom
+      (colorful-use-prefix t)
+      (colorful-only-strings 'only-prog)
+      (css-fontify-colors nil)
+      :config
+      (global-colorful-mode t)
+      (add-to-list 'global-colorful-modes 'helpful-mode))
 
-  ;; Pulse modified region
-  (use-package goggles
-    :diminish
-    :hook ((prog-mode text-mode) . goggles-mode))
+    ;; Pulse modified region
+    (use-package goggles
+      :diminish
+      :hook ((prog-mode text-mode) . goggles-mode))
 
-  ;; TODO Hightlight (Comment-tags)
-  (use-package hl-todo
-    :custom-face
-    (hl-todo ((t (:inherit variable-pitch :height 0.9
-                           :width condensed :weight bold
-                           :underline nil :inverse-video t))))
-    :hook
-    ((prog-mode text-mode) . hl-todo-mode)
-    ((hl-todo-mode
-      eglot-managed-mode)
-     . (lambda ()
-         (add-hook 'flymake-diagnostic-functions
-                   #'hl-todo-flymake nil t)))
-    :custom
-    (hl-todo-require-punctuation t)
-    (hl-todo-highlight-punctuation ":")
-    :config
-    (let ((_error   (face-attribute 'error :foreground))
-          (_warning (face-attribute 'warning :foreground))
-          (_info    (face-attribute 'success :foreground))
-          (_misc    (face-attribute 'nerd-icons-blue :foreground)))
+    ;; TODO Hightlight (Comment-tags)
+    (use-package hl-todo
+      :custom-face
+      (hl-todo ((t (:inherit variable-pitch :height 0.9
+                             :width condensed :weight bold
+                             :underline nil :inverse-video t))))
+      :hook
+      ((prog-mode text-mode) . hl-todo-mode)
+      ((hl-todo-mode
+        eglot-managed-mode)
+       . (lambda ()
+           (add-hook 'flymake-diagnostic-functions
+                     #'hl-todo-flymake nil t)))
+      :custom
+      (hl-todo-require-punctuation t)
+      (hl-todo-highlight-punctuation ":")
+      :config
+      (let ((_error   (face-attribute 'error :foreground))
+            (_warning (face-attribute 'warning :foreground))
+            (_info    (face-attribute 'success :foreground))
+            (_misc    (face-attribute 'nerd-icons-blue :foreground)))
 
-      (dolist (keyword '("BUG" "DEFECT" "ISSUE" "FIX" "FAIL" "FIXME" "FAIL"))
-        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_error)))
-      (dolist (keyword '("WARNING"))
-        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_warning)))
-      (dolist (keyword '("WORKAROUND" "NOTE" "TRICK" "HACK"))
-        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_info)))
-      (dolist (keyword '("DEBUG" "STUB" "TODO"))
-        (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_misc))))
-    :preface
-    ;; NOTE: THIS OVERRIDE CAN BECOME OBSOLETE IN THE FUTURE
-    (defun my/hl-todo-flymake (report-fn &rest _plist)
-      (let ((diags nil)
-            (buf (current-buffer))
-            (comment (concat (regexp-quote comment-start) "\\s-+")))
-        (when hl-todo-mode
-          (save-excursion
-            (save-restriction
-              (save-match-data
-                (goto-char (point-min))
-                (while (hl-todo--search)
-                  (let ((beg (match-beginning 0))
-                        (end (pos-eol))
-                        (bol (pos-bol)))
-                    ;; Take whole line when keyword is not at the start of comment
-                    (save-excursion
-                      (goto-char beg)
-                      (unless (looking-back comment bol)
-                        (goto-char bol)
-                        ;; Skip whitespace at the beginning of line
-                        (when (and (not (looking-at-p "\\S-"))
-                                   (re-search-forward "\\S-" beg t))
-                          (forward-char -1))
-                        ;; Skip comment
-                        (re-search-forward comment beg t)
-                        (setq beg (point))))
-                    (push (flymake-make-diagnostic
-                           buf beg end 'hl-todo-flymake
-                           (buffer-substring-no-properties beg end))
-                          diags)))))))
-        (put 'hl-todo-flymake 'flymake-category 'flymake-note)
-        (funcall report-fn (nreverse diags))))
-    (advice-add #'hl-todo-flymake :override #'my/hl-todo-flymake))
+        (dolist (keyword '("BUG" "DEFECT" "ISSUE" "FIX" "FAIL" "FIXME" "FAIL"))
+          (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_error)))
+        (dolist (keyword '("WARNING"))
+          (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_warning)))
+        (dolist (keyword '("WORKAROUND" "NOTE" "TRICK" "HACK"))
+          (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_info)))
+        (dolist (keyword '("DEBUG" "STUB" "TODO"))
+          (add-to-list 'hl-todo-keyword-faces `(,keyword . ,_misc))))
+      :preface
+      ;; NOTE: THIS OVERRIDE CAN BECOME OBSOLETE IN THE FUTURE
+      (defun my/hl-todo-flymake (report-fn &rest _plist)
+        (let ((diags nil)
+              (buf (current-buffer))
+              (comment (concat (regexp-quote comment-start) "\\s-+")))
+          (when hl-todo-mode
+            (save-excursion
+              (save-restriction
+                (save-match-data
+                  (goto-char (point-min))
+                  (while (hl-todo--search)
+                    (let ((beg (match-beginning 0))
+                          (end (pos-eol))
+                          (bol (pos-bol)))
+                      ;; Take whole line when keyword is not at the start of comment
+                      (save-excursion
+                        (goto-char beg)
+                        (unless (looking-back comment bol)
+                          (goto-char bol)
+                          ;; Skip whitespace at the beginning of line
+                          (when (and (not (looking-at-p "\\S-"))
+                                     (re-search-forward "\\S-" beg t))
+                            (forward-char -1))
+                          ;; Skip comment
+                          (re-search-forward comment beg t)
+                          (setq beg (point))))
+                      (push (flymake-make-diagnostic
+                             buf beg end 'hl-todo-flymake
+                             (buffer-substring-no-properties beg end))
+                            diags)))))))
+          (put 'hl-todo-flymake 'flymake-category 'flymake-note)
+          (funcall report-fn (nreverse diags))))
+      (advice-add #'hl-todo-flymake :override #'my/hl-todo-flymake))
 #+end_src
 
-* tool-bar.el
+* The Use(less/ful) ToolBar (tool-bar.el)
 
 The tool-bar is that feature that almost no one who uses Emacs uses it.
 However, since this is Visual Emacs, we enable it by default.
@@ -539,7 +562,7 @@ However, since this is Visual Emacs, we enable it by default.
 If you don't want this, you can remove this header.
 
 #+begin_src elisp
-    ;;; FUNCTIONS
+  ;;; FUNCTIONS
 
   (defun my/run-program ()
     "Run Current Project of Buffer by its 'major-mode'."
@@ -562,11 +585,15 @@ If you don't want this, you can remove this header.
         (call-interactively #'projection-commands-set-build-command)
       (call-interactively #'projection-commands-build-project)))
 
-  ;;; ADD TOOL BAR BUTTONS
+      ;;; ADD TOOL BAR BUTTONS
   ;; Can Add Submenus in tool bar as: <tool-bar> <copy> COMMAND
   ;; image scale with :scale
 
   (when (display-graphic-p)
+    (setopt tool-bar-style 'image)
+    ;; For Lucid ToolKit
+    (set-face-attribute 'tool-bar nil :inherit 'tab-bar-tab-inactive)
+    (set-face-attribute 'tool-bar nil :box nil)
     (if (eq system-type 'android)
         (progn
           (setopt tool-bar-position 'bottom)
@@ -646,11 +673,12 @@ If you don't want this, you can remove this header.
       'dashboard-open))
 #+end_src
 
-* menu-bar.el
+* The menu bar (menu-bar.el)
 
 The same goes for this:
 
 #+begin_src elisp
+  ;; Extracted from ergoemacs
   (setq-local my/menu-menu--get-major-modes nil)
 
   (setq-local my/menu-major-mode-menu-map-extra-modes
@@ -930,11 +958,10 @@ The same goes for this:
                       "Quit")
 #+end_src
 
-* minibuffer.el
+* Our beloved mini-buffer (minibuffer.el)
 
 #+begin_src elisp
-    ;;; ENABLE RICH ANNOTATIONS USING THE MARGINALIA PACKAGE
-  
+
   (use-package marginalia
     :custom
     (marginalia-mode t)
@@ -960,7 +987,7 @@ The same goes for this:
                        (str :truncate 1.2 :face 'marginalia-documentation))))))
 
   ;;; CONSULT UI
-  
+
   (use-package consult
     :demand t
     :hook (completion-list-mode . consult-preview-at-point-mode)
@@ -991,13 +1018,12 @@ The same goes for this:
                                  :predicate pred))))
 
   ;;; VERTICO MINIBUFFER UI
-  
+
   (use-package vertico
     :ensure vertico-prescient
     :custom
     (minibuffer-prompt-properties
-     '(
-       read-only t
+     '(read-only t
        cursor-intangible t
        face (:inherit minibuffer-prompt :weight bold :height 1.3)))
     (vertico-count 14)
@@ -1034,9 +1060,13 @@ The same goes for this:
   (advice-add #'message :filter-args #'message-filter-center)
 #+end_src
 
-* ui-enchantment.el
+* Fancy configurations (i think) (ui-enchantment.el)
 
 #+begin_src elisp
+
+  ;;; Font:
+  (set-frame-font "Inconsolata Nerd Font 12" nil t)
+
   ;;; Emoji:
   (if-let* ((font "Segoe UI Emoji")
             ((member font (font-family-list))))
@@ -1058,7 +1088,7 @@ The same goes for this:
     :ensure nil
     :hook
     ((prog-mode text-mode) . display-fill-column-indicator-mode)
-    ;; warns the user if the cursor is above of 'fill-column' limit.
+    ;; Warns  if the cursor is above of 'fill-column' limit.
     (display-fill-column-indicator-mode
      . (lambda ()
          (add-hook
@@ -1083,6 +1113,7 @@ The same goes for this:
 
   ;;; ADD ANSI COLOR TO COMPILATION BUFFER
   (add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
+  (setopt ansi-color-for-comint-mode 'filter)
 
   ;;; ADD LINK TO ERROR IN TERMINALS OR SHELLS
   (use-package shell :ensure nil
@@ -1119,12 +1150,8 @@ The same goes for this:
   ;; (add-hook 'buffer-list-update-hook          'update-scroll-bars)
 
   ;;; LINE NUMBER
-  (setopt
-   ;; Explicitly define a width to reduce the cost of on-the-fly computation
-   display-line-numbers-width 3
-   ;; Show absolute line numbers for narrowed regions to make it easier to tell the
-   ;; buffer is narrowed, and where you are, exactly.
-   display-line-numbers-widen t)
+  (setopt display-line-numbers-width 3
+          display-line-numbers-widen t)
 
   ;; (setopt help-at-pt-display-when-idle t) ;; SHOW ANY TOOLTIP IN ECHO BUFFER
 
@@ -1183,7 +1210,8 @@ The same goes for this:
 
   ;;; MINIMAP
   (use-package minimap
-    :hook (prog-mode . minimap-mode))
+    ;; :hook (prog-mode . minimap-mode)
+    :custom (minimap-window-location 'right))
 
   ;;; Sideline
   (use-package sideline)
@@ -1196,7 +1224,9 @@ The same goes for this:
     :hook ((Custom-mode Info-mode image-mode) . olivetti-mode))
 
   ;;; Enable 'All-the-icons' and 'Nerd-icons'
-  (use-package nerd-icons :demand t)
+  (use-package nerd-icons :demand t
+    :custom
+    (nerd-icons-font-family "Inconsolata Nerd Font"))
   (use-package nerd-icons-completion
     :demand t
     :hook
@@ -1207,6 +1237,7 @@ The same goes for this:
     :hook
     (prog-mode . breadcrumb-local-mode)
     :custom
+    ;; Add nerd-icons to breadcrumb
     (breadcrumb-imenu-crumb-separator
      (concat " "(nerd-icons-mdicon "nf-md-chevron_right") " "))
     (breadcrumb-project-crumb-separator
@@ -1262,7 +1293,7 @@ The same goes for this:
                             (t string)))))))
 #+end_src
 
-* misc.el
+* Other packages configurations (misc.el)
 
 #+begin_src elisp
   ;;; MISC
@@ -1287,9 +1318,10 @@ The same goes for this:
   ;; TERMINAL EMULATOR, CHOOSE THE ONE YOU PREFER
   (use-package eat
     :unless (or (eq system-type 'android)
+                ;; Windows doesn't support terminals yet
                 (eq system-type 'windows-nt)))
 
-  ;;; WHITESPACES
+    ;;; WHITESPACES
   (use-package whitespace
     :diminish
     :ensure nil
@@ -1305,6 +1337,7 @@ The same goes for this:
     (whitespace-mode . word-wrap-whitespace-mode)
     :custom
     ;; (whitespace-action '(auto-cleanup warn-if-read-only)) ; optional
+    (whitespace-display-mappings '((tab-mark 9 [8250 9]) (space-mark 32 [183] [46])))
     (whitespace-line-column nil)
     (whitespace-style '(face tabs spaces trailing space-mark
                              tab-mark newline-mark)))
@@ -1328,6 +1361,7 @@ The same goes for this:
       go-ts-mode go-mode-ts-mode rust-ts-mode
       java-ts-mode csharp-ts-mode)
      . (lambda ()
+         "Autoinsert C /**/ comments"
          (add-hook 'post-self-insert-hook
                    (lambda ()
                      (when (and (looking-back "/[*]" 2)
@@ -1338,7 +1372,7 @@ The same goes for this:
                          (insert " */"))))
                    nil t))))
 
-  ;;; Helpful (provides much more contextual information)
+    ;;; Helpful (provides much more contextual information)
   (use-package helpful
     :config
     ;; Shut down echo elisp messages in helpful
@@ -1347,7 +1381,7 @@ The same goes for this:
                             (interactive)
                             (setq-local tool-bar-map help-mode-tool-bar-map))))
 
-  ;;; RUN OR COMPILE CURRENT BUFFER
+    ;;; RUN OR COMPILE CURRENT BUFFER
   (use-package quickrun
     :demand t
     :hook
@@ -1425,7 +1459,7 @@ The same goes for this:
            (t
             'grep)))
 
-  ;;; PROJECT MANAGEMENT
+    ;;; PROJECT MANAGEMENT
   (use-package project
     :ensure nil
     :custom
@@ -1455,14 +1489,14 @@ The same goes for this:
       '(menu-item "Set Build Command" projection-commands-set-build-command
                   :help
                   "The command to use with projection-commands-build-project.
-  You can set via .dir-locals.el too.")
+    You can set via .dir-locals.el too.")
       'dir-locals)
 
     (keymap-set-after (default-value 'menu-bar-project-menu) "<run-command>"
       '(menu-item "Set Run Command" projection-commands-set-run-command
                   :help
                   "The command to use with projection-commands-run-project.
-  You can set via .dir-locals.el too.")
+    You can set via .dir-locals.el too.")
       'build-command)
 
     (keymap-set-after (default-value 'menu-bar-project-menu) "<build>"
@@ -1501,12 +1535,14 @@ The same goes for this:
         :config (consult-compile-multi-mode))))
 
   ;; Optionally projectile support
-  ;;; WARNING: OUTDATED, USE AT YOUR OWN RISK
+    ;;; WARNING: OUTDATED, USE AT YOUR OWN RISK
   ;; (use-package projectile
   ;;   :diminish projectile-mode
   ;;   :bind (:map projectile-mode-map
   ;;               ("C-c p" . projectile-command-map))
   ;;   :custom
+  ;;   (projectile-run-use-comint-mode t)
+  ;;   (projectile-sort-order 'recentf)
   ;;   (projectile-enable-caching (not noninteractive))
   ;;   (projectile-require-project-root nil)
   ;;   :config
@@ -1546,11 +1582,11 @@ The same goes for this:
       (add-to-list 'woman-manpath paths)))
 #+end_src
 
-* syntax-checking.el
+* Flymake (syntax-checking.el)
 
 #+begin_src elisp
     ;;; FLYMAKE
-  
+
   (use-package flymake :ensure nil
     :unless (eq system-type 'android) ; DOESN'T WORK ON ANDROID
     :bind
@@ -1585,7 +1621,7 @@ The same goes for this:
       'List\ all\ problems)
     ;; More Spaces for the Error List Row
     (setf (cadr (aref flymake--diagnostics-base-tabulated-list-format 2)) 10)
-    ;; Improve UI Checkers
+    ;; Fix margin indicators when whitespace is enabled
     (advice-add #'flymake--indicator-overlay-spec
                 :filter-return
                 (lambda (indicator)
@@ -1606,7 +1642,7 @@ The same goes for this:
          (alist-get 'hl-todo-flymake flymake-margin-indicators-string)))
 
   ;;; FLYCHECK
-  
+
   ;; WARNING: OUTDATED, USE AT YOUR OWN RISK
   ;; (use-package flycheck
   ;;   :unless (eq system-type 'android)
@@ -1732,7 +1768,7 @@ The same goes for this:
   ;;     (flycheck-hl-todo-setup)))
 #+end_src
 
-* spell-checking.el
+* Writing better (spell-checking.el)
 
 #+begin_src elisp
   (use-package flyspell
@@ -1751,10 +1787,10 @@ The same goes for this:
       (add-to-list 'ispell-skip-region-alist my-list)))
 #+end_src
 
-* window-manegement.el
+* Some Tweaks for windows, frames, etc (window-manegement.el)
 
 #+begin_src elisp
-  ;;; DOCUMENTATION IN AN BOX
+   ;;; DOCUMENTATION IN AN BOX
   
   (use-package eldoc-box
     :if (display-graphic-p)
@@ -1772,16 +1808,23 @@ The same goes for this:
           (alist-get 'internal-border-width eldoc-box-frame-parameters) 2
           (alist-get 'right-fringe eldoc-box-frame-parameters) 0))
 
-  ;;; MINIBUFFER IN FRAME
+     ;;; MINIBUFFER IN FRAME
   
   (use-package mini-frame
     :if (display-graphic-p)
     :unless (eq system-type 'android)
     :custom
-    (mini-frame-mode t)
+    (mini-frame-completions-show-parameters
+     '((height . 0.25) (width . 0.5) (menu-bar-lines . 0)
+       (tool-bar-lines . 0) (left . 0.5)))
+    (mini-frame-show-parameters
+     '((width . 0.6) (menu-bar-lines . 0) (tool-bar-lines . 0) (left . 0.5)
+       (vertical-scroll-bars) (height . 15)
+       (child-frame-border-width . 0)))
     :config
     ;; WARNING: PGTK BUILD IS BUGGED
-    ;; IT FOCUS TO TOOL BAR FRAME THIS MUST FIXS THIS BUG
+    ;; IT FOCUS KEYBOARD MOVEMENTS TO TOOL BAR FRAME
+    ;; THIS MUST FIXS THIS BUG
     (if (eq system-type 'windows-nt)
         (dolist (params '((alpha . 85)
                           (minibuffer-exit . t)))
@@ -1789,8 +1832,10 @@ The same goes for this:
           (add-to-list 'mini-frame-completions-show-parameters params))
 
       (setopt mini-frame-detach-on-hide nil)
-      (add-to-list 'mini-frame-show-parameters '(alpha-background . 85))
-      (fset #'select-frame-set-input-focus #'select-frame)))
+      ;; (add-to-list 'mini-frame-show-parameters '(alpha-background . 85))
+      (fset #'select-frame-set-input-focus #'select-frame))
+    :init
+    (mini-frame-mode t))
 
   (use-package which-key-posframe
     :if (display-graphic-p)
@@ -1798,7 +1843,7 @@ The same goes for this:
     (which-key-posframe-poshandler 'posframe-poshandler-frame-bottom-center)
     (which-key-posframe-mode t))
 
-  ;;; DISPLAY BUFFER BELOW
+     ;;; DISPLAY BUFFER BELOW
   
   (use-package window
     :ensure nil
@@ -1838,14 +1883,14 @@ The same goes for this:
                             (side . right)))))
                     (apply orig r)))))
 
-  ;; Soon, obsolete
+  ;; Soon obsolete
   ;; ;; Kill Buffer, don't hide it
   ;; (advice-add #'quit-window :around
   ;;             (lambda (orig-fn _ &rest window)
   ;;               (funcall orig-fn 't window)))
 #+end_src
 
-* lsp.el
+* EGLOT (lsp.el)
 #+begin_src elisp
   (use-package eglot
     :ensure nil
@@ -1921,7 +1966,7 @@ The same goes for this:
 
 
   ;;; LANGUAGE SERVER
-  
+
   ;; WARNING: OUTDATED, USE AT YOUR OWN RISK
   ;; (use-package lsp-mode
   ;;   :disabled t
@@ -2263,7 +2308,7 @@ The same goes for this:
   ;;          :icon (format "%s " (nerd-icons-codicon "nf-cod-repo" :face 'nerd-icons-blue))
   ;;          :extensions (java-project))))))
 #+end_src
-* file-management.el
+* Dired, Treemacs and more (file-management.el)
 #+begin_src elisp
   ;; Define which file manager use
   ;; (e.g 'treemacs' or 'dirvish-side').
@@ -2271,17 +2316,18 @@ The same goes for this:
   ;; dired+ (optional):
   ;; (load (concat user-emacs-directory "config-lisp-files/" "diredp"))
 
-  ;;; DIRED CONFIGURATIONS
+   ;;; DIRED CONFIGURATIONS
   (use-package dired-x
     :ensure nil
     :custom
+    (dired-mouse-drag-files t)
     (dired-omit-files
      (rx (or (seq bol (one-or-more "flycheck_"))
              (seq bol (? ".") "#")
              (seq bol "." eol)
              (seq bol ".." eol)))))
 
-  ;;; DIRVISH
+   ;;; DIRVISH
   
   (use-package dirvish
     :hook
@@ -2296,6 +2342,9 @@ The same goes for this:
     :custom
     (delete-by-moving-to-trash t)
     (dirvish-subtree-always-show-state t)
+    (dirvish-side-follow-mode t)
+    (dirvish-side-width 31)
+    (dirvish-subtree-state-style 'nerd)
     (dirvish-attributes
      '(nerd-icons
        subtree-state
@@ -2330,6 +2379,15 @@ The same goes for this:
     :bind
     (:map treemacs-mode-map
           ("<delete>" . treemacs-delete-file))
+    :custom
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode nil)
+    (treemacs-indent-guide-mode t)
+    (treemacs-indentation 1)
+    (treemacs-is-never-other-window t)
+    (treemacs-project-follow-mode t)
+    (treemacs-user-mode-line-format 'none)
+    (treemacs-width 37)
     :preface
     (defun doom-themes-enable-treemacs-variable-pitch-labels (&rest _)
       (dolist (face '(treemacs-root-face
@@ -2363,16 +2421,16 @@ The same goes for this:
       :config (treemacs-load-theme "nerd-icons")))
 #+end_src
 
-* smart-completion.el
+* Make completion better (and fancy) (smart-completion.el)
 #+begin_src elisp
-    ;;; ORDERLESS COMPLETION
+   ;;; ORDERLESS COMPLETION
   
   (use-package orderless
     :custom
     (completion-styles '(orderless basic)) ; Use orderless and basic completation
     (completion-category-overrides '((file (styles basic partial-completion)))))
 
-  ;;; Corfu
+       ;;; Corfu
   
   (use-package corfu
     :ensure t
@@ -2395,6 +2453,7 @@ The same goes for this:
                        corfu-popupinfo-delay nil)
            (corfu-mode 1))))
     :custom
+    (completion-auto-help 'always)
     (corfu-quit-no-match t)
     (corfu-preselect 'first)
     (corfu-auto t)
@@ -2416,15 +2475,17 @@ The same goes for this:
       :config
       (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)
 
-      (setf (nth 2  nerd-icons-corfu-mapping) '(class :style "md" :icon "alpha_c_circle" :face font-lock-type-face)
-            (nth 5  nerd-icons-corfu-mapping) '(constant :style "md" :icon "pi" :face font-lock-constant-face)
-            (nth 18 nerd-icons-corfu-mapping) '(method :style "md" :icon "alpha_m_circle" :face font-lock-function-name-face)
-            (nth 19 nerd-icons-corfu-mapping) '(function :style "md" :icon "function_variant" :face font-lock-function-name-face)
-            (nth 26 nerd-icons-corfu-mapping) '(snippet :style "md" :icon "xml" :face font-lock-string-face)
-            (nth 29 nerd-icons-corfu-mapping) '(text :style "md" :icon "text_recognition" :face font-lock-doc-face)
-            (nth 15 nerd-icons-corfu-mapping) '(keyword :style "cod" :icon "key" :face font-lock-keyword-face))))
+      ;; CUSTOM ICONS
+      ;; (setf (nth 2  nerd-icons-corfu-mapping) '(class :style "md" :icon "alpha_c_circle" :face font-lock-type-face)
+      ;;       (nth 5  nerd-icons-corfu-mapping) '(constant :style "md" :icon "pi" :face font-lock-constant-face)
+      ;;       (nth 18 nerd-icons-corfu-mapping) '(method :style "md" :icon "alpha_m_circle" :face font-lock-function-name-face)
+      ;;       (nth 19 nerd-icons-corfu-mapping) '(function :style "md" :icon "function_variant" :face font-lock-function-name-face)
+      ;;       (nth 26 nerd-icons-corfu-mapping) '(snippet :style "md" :icon "xml" :face font-lock-string-face)
+      ;;       (nth 29 nerd-icons-corfu-mapping) '(text :style "md" :icon "text_recognition" :face font-lock-doc-face)
+      ;;       (nth 15 nerd-icons-corfu-mapping) '(keyword :style "cod" :icon "key" :face font-lock-keyword-face))
+      ))
 
-  ;;; Completion At Point Extensions
+       ;;; Completion At Point Extensions
   
   (use-package cape
     :hook
@@ -2455,7 +2516,7 @@ The same goes for this:
     :config
     (use-package yasnippet-capf))
 
-  ;;; Company
+       ;;; Company
   ;; WARNING: OUTDATED, USE IT AT YOUR OWN RISK
   
   ;; (use-package company
@@ -2463,6 +2524,13 @@ The same goes for this:
   ;;   :demand t
   ;;   :hook ((eshell-mode shell-mode) . (lambda () (company-mode -1)))
   ;;   :custom
+  ;;   (global-company-mode t)
+  ;;   (company-backends
+  ;;    '(company-paths (company-capf :with company-yasnippet) company-cmake
+  ;;                     company-files
+  ;;                     (company-dabbrev-code company-gtags company-etags
+  ;;                                           company-keywords)
+  ;;                     company-dabbrev))
   ;;   (company-transformers '(my/company-sort-yas-first))
   ;;   (company-frontends ; always show candidates in overlay tooltip
   ;;    '(company-pseudo-tooltip-frontend
@@ -2481,6 +2549,19 @@ The same goes for this:
   ;;     :if (display-graphic-p)
   ;;     :hook (company-mode . company-box-mode)
   ;;     :custom
+  ;;     (company-box-frame-behavior 'point)
+  ;;     (company-box-icons-alist 'company-box-icons-idea)
+  ;;     (company-box-scrollbar 'right)
+  ;;     (company-box-show-single-candidate 'always)
+  ;;     (company-format-margin-function 'company-text-icons-margin)
+  ;;     (company-idle-delay 0)
+  ;;     (company-minimum-prefix-length 2)
+  ;;     (company-quickhelp-delay 0.1)
+  ;;     (company-require-match nil)
+  ;;     (company-text-face-extra-attributes '(:weight bold :slant italic))
+  ;;     (company-tooltip-align-annotations t)
+  ;;     (company-tooltip-limit 14)
+  ;;     (company-tooltip-minimum-width 50)
   ;;     (company-box-backends-colors nil)
   ;;     (company-box-max-candidates 50)
   ;;     :config
@@ -2502,7 +2583,7 @@ The same goes for this:
   ;;     candidates))
 #+end_src
 
-* mode-line.el
+* The modeline (mode-line.el)
 #+begin_src elisp
   ;; Minor Config in Modeline
   (use-package minions
@@ -2520,7 +2601,7 @@ The same goes for this:
             . hide-mode-line-mode)))
 
   ;;; DOOM MODELINE
-  
+
   (use-package doom-modeline
     :hook (after-init . doom-modeline-mode)
     :custom
@@ -2546,7 +2627,7 @@ The same goes for this:
     (add-to-list 'doom-modeline-mode-alist '(dashboard-mode)))
 #+end_src
 
-* custom-themes.el
+* +eMacs+ Emacs Themes (custom-themes.el)
 #+begin_src elisp
     ;;; SOLAIRE DISTINGUISH "REAL" BUFFERS FROM "UNREAL" BUFFERS
   
@@ -2565,7 +2646,7 @@ The same goes for this:
       (setf (alist-get face solaire-mode-remap-alist) nil))
     (solaire-global-mode t))
 
-  ;;; INSTALL THEMES
+        ;;; INSTALL THEMES
   
   ;; (use-package catppuccin-theme
   ;;     :config
@@ -2576,14 +2657,22 @@ The same goes for this:
 
   (use-package doom-themes
     :config
-    (load-theme 'doom-dark+)
     ;; Enable flashing mode-line on errors
-    (doom-themes-visual-bell-config)
+    ;; (doom-themes-visual-bell-config)
     ;; Corrects (and improves) org-mode's native fontification.
-    (doom-themes-org-config))
+    ;; (doom-themes-org-config)
+    )
+
+  ;; (use-package vscode-dark-plus-theme) ; Buggy
+
+  (load-theme 'doom-dark+ t)
+  ;;; Faces
+  (set-face-attribute 'custom-group-tag nil :height 1.2)
+  (set-face-attribute 'region nil :extend nil)
+  (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
 #+end_src
 
-* dashboard.el
+* A nice dashboard at startup (dashboard.el)
 #+begin_src elisp
   (use-package dashboard
     :hook
@@ -2682,8 +2771,7 @@ The same goes for this:
            ,r)
           )
          ;; line 2
-         (
-          (,(nerd-icons-mdicon "nf-md-package_variant")
+         ((,(nerd-icons-mdicon "nf-md-package_variant")
            "Search Packages"                    ; Title
            "Search and install Emacs Packages"   ; Description
            (lambda (&rest _) (list-packages))
@@ -2700,10 +2788,8 @@ The same goes for this:
           )))))
 #+end_src
 
-* org-mode.el
+* ORG (org-mode.el)
 #+begin_src elisp
-    ;;; ORG MODERN
-  
   (use-package org
     :ensure nil
     :hook
@@ -2747,10 +2833,9 @@ The same goes for this:
       (global-org-modern-mode t)))
 #+end_src
 
-* windows-tabs.el
+* Windows tabs (windows-tabs.el)
 #+begin_src elisp
   (use-package centaur-tabs
-    :load-path "~/Escritorio/projectos/centaur-tabs/"
     :hook (emacs-startup . centaur-tabs-mode)
     :custom
     (centaur-tabs-cycle-scope 'tabs)
@@ -2848,7 +2933,7 @@ The same goes for this:
     (advice-add #'load-theme :after #'run-after-load-theme-hook))
 #+end_src
 
-* code-snippets.el
+* Snippets (code-snippets.el)
 #+begin_src elisp
   (use-package yasnippet
     :diminish yas-minor-mode
@@ -2859,7 +2944,7 @@ The same goes for this:
       :after yasnippet))
 #+end_src
 
-* auto-insert-templates.el
+* File Templates powered with yasnippet (auto-insert-templates.el)
 #+begin_src elisp
   ;; Enable Auto-insert mode for File Templates
   (use-package autoinsert
@@ -2880,7 +2965,7 @@ The same goes for this:
     )
 #+end_src
 
-* ligatures.el
+* Ligatures (Is this necessary?) (ligatures.el)
 #+begin_src elisp
 
   (use-package ligature
@@ -2907,4 +2992,44 @@ The same goes for this:
 
   
   (provide 'ligatures-config)
+#+end_src
+
+* The Great GNUS (.gnus)
+
+In case that you want to use GNUS for mailing or as RSS Reader the
+configuration below can be useful to you.
+
+NOTE: THIS CONFIGURATION IS ONLY INTENDED FOR GMAIL USERS.
+See this article for more information:
+https://gist.github.com/BonfaceKilz/726a1f2c06f15372c2df91fd64895bf9
+
+Make sure =.authinfo.gpg= (and optionally =.signature=) exists,
+also the =EMAIL= Environment variable must be set.
+
+#+begin_src elisp
+(setq gnus-select-method '(nntp "news.gmane.io") ;; if you read news groups
+      epa-file-cache-passphrase-for-symmetric-encryption t
+
+      smtpmail-smtp-server "smtp.gmail.com"
+      smtpmail-smtp-service 587
+      gnus-ignored-newsgroups "^to\\.\\|^[0-9. ]+\\( \\|$\\)\\|^[\"]\"[#'()]"
+
+      gnus-thread-sort-functions
+      '(gnus-thread-sort-by-date
+        (not gnus-thread-sort-by-number)))
+
+;; @see http://gnus.org/manual/gnus_397.html
+(add-to-list 'gnus-secondary-select-methods
+             '(nnimap "gmail"
+                      (nnimap-address "imap.gmail.com")
+                      (nnimap-server-port 993)
+                      (nnimap-stream ssl)
+                      (nnir-search-engine imap)
+                      ;; @see http://www.gnu.org/software/emacs/manual/html_node/gnus/Expiring-Mail.html
+                      ;; press `E' to expire email
+                      (nnmail-expiry-target "nnimap+gmail:[Gmail]/Trash")
+                      (nnmail-expiry-wait 90)))
+
+(add-hook 'gnus-group-mode-hook 'gnus-topic-mode)
+
 #+end_src
