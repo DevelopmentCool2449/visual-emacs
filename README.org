@@ -2,9 +2,9 @@
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
-#+html: <img src="./assets/splash.svg" align="left" width="20%">
+[[./assets/README_images/screenshot.png]]
 
-[[./assets/READ_images/screenshot.png]]
+#+html: <img src="./assets/splash.svg" align="left" width="20%">
 
 What's this?, why does this exists?
 If you came from VsCode, Eclipse, VisualStudio or Notepad
