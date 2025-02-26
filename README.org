@@ -2,13 +2,13 @@
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
-#+html: <img src="./assets/README_images/README_SPLASH.svg" align="center" width="40%">
+#+html: <img src="./assets/README_images/README_SPLASH.svg" align="center" width="60%">
 
 [[./assets/README_images/screenshot.png]]
 
 #+begin_quote
  WTH?
-- an emacs user
+\- an emacs user
 #+end_quote
 
 #+html: <img src="./assets/README_images/wtf.jpg" align="left" width="25%">
