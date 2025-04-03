@@ -1,4 +1,4 @@
-#+TITLE: Visual Emacs - an template configuration for a VSCode-like appearence
+#+TITLE: Visual Emacs - a template configuration for a VSCode-like appearence
 #+AUTHOR: Elijah Gabe P.
 #+OPTIONS: num:nil
 
@@ -6,15 +6,9 @@
 
 [[./assets/README_images/screenshot.png]]
 
-#+begin_quote
- WTH?
-
-\- an emacs user
-#+end_quote
-
 #+html: <img src="./assets/README_images/wtf.jpg" align="left" width="25%">
 
-Visual Emacs is an configuration template that gives you a VSCode-like look,
+Visual Emacs is a configuration template that gives you a VSCode-like look,
 This configuration can be useful for VSCode refugees who want to use GNU Emacs without
 having to spend a lot of time configuring and feel comfortable with a similar interface.
 
@@ -33,7 +27,7 @@ the packages offered by this [[https://github.com/emacs-vs][repository]].
 - a nerd-font installed /(This configuration uses
   Inconsolata, you can change it to the one you prefer.)/
 
-- latest emacs version (better if nighly)
+- latest emacs version (better if nightly)
 
 - a config file to where paste these snippets (optional)
 
